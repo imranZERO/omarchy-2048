@@ -1,0 +1,226 @@
+import QtQuick
+import qs.Commons
+import qs.Commons as Commons
+
+// One board tile. Position comes from col/row and is animated by the Behaviors
+// below, so moving a tile is just changing those two numbers. New tiles play
+// their entrance (spawn / merge pop / undo fade) once, when they are created.
+Item {
+  id: root
+
+  required property int value
+  required property int col
+  required property int row
+  required property string kind     // "static" | "spawn" | "merge" | "restore"
+  required property bool dying      // sliding into a merge, about to be removed
+  required property int fx          // 0 none, 1 glow ring, 2 double ring (new best tile)
+
+  property int cell: 64
+  property int gap: 10
+  property int slideMs: 110
+  property int popMs: 200
+  property int spawnMs: 200
+  // "Theme", "Classic" or "Mono"
+  property string paletteMode: "Theme"
+  // The theme's hue palette (a ThemePalette), set by Board.
+  property var palette: null
+
+  x: gap + col * (cell + gap)
+  y: gap + row * (cell + gap)
+  width: cell
+  height: cell
+  z: dying ? 0 : (kind === "merge" ? 2 : 1)
+
+  Behavior on x { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
+  Behavior on y { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
+
+  // ---- colors ---------------------------------------------------------------
+
+  function channel(c) {
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  }
+
+  function luminance(c) {
+    return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b)
+  }
+
+  function contrast(a, b) {
+    var la = luminance(a)
+    var lb = luminance(b)
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+  }
+
+  readonly property int level: Math.round(Math.log(value) / Math.LN2)
+
+  readonly property var classicFills: ({
+    1: "#eee4da", 2: "#ede0c8", 3: "#f2b179", 4: "#f59563", 5: "#f67c5f", 6: "#f65e3b",
+    7: "#edcf72", 8: "#edcc61", 9: "#edc850", 10: "#edc53f", 11: "#edc22e"
+  })
+
+  // Theme: 2 and 4 are neutral washes, 8 to 512 walk the theme's hues warm to
+  // cool, 1024 is a deepened accent, 2048 flips to the foreground with an
+  // accent outline, anything higher is urgent with a foreground outline.
+  function themeFill() {
+    var bg = Commons.Color.popups.background
+    if (level <= 1) return Qt.tint(bg, Util.alpha(Commons.Color.foreground, 0.12))
+    if (level === 2) return Qt.tint(bg, Util.alpha(Commons.Color.foreground, 0.22))
+    if (level <= 9) {
+      var ramp = palette ? palette.ramp : null
+      var hue = ramp && ramp[level - 3] !== undefined ? ramp[level - 3] : Commons.Color.accent
+      return Qt.tint(bg, Util.alpha(hue, 0.92))
+    }
+    if (level === 10) return Qt.tint(Commons.Color.accent, Util.alpha(Commons.Color.foreground, 0.45))
+    if (level === 11) return Commons.Color.foreground
+    return Commons.Color.urgent
+  }
+
+  // Mono: one hue, the accent, getting stronger with every doubling.
+  function monoFill() {
+    var t = Math.min(1, (level - 1) / 10)
+    var base = Qt.tint(Commons.Color.popups.background, Util.alpha(Commons.Color.accent, 0.15 + 0.85 * t))
+    if (level > 11) return Qt.tint(base, Util.alpha(Commons.Color.urgent, 0.6))
+    return base
+  }
+
+  function classicFill() {
+    return level > 11 ? "#3c3a32" : (classicFills[level] || "#3c3a32")
+  }
+
+  readonly property color fillColor:
+    paletteMode === "Classic" ? classicFill()
+      : paletteMode === "Mono" ? monoFill()
+      : themeFill()
+
+  readonly property color textColor: {
+    if (paletteMode === "Classic") return level <= 2 ? "#776e65" : "#f9f6f2"
+    return contrast(fillColor, Commons.Color.foreground) >= contrast(fillColor, Commons.Color.background)
+      ? Commons.Color.foreground : Commons.Color.background
+  }
+
+  readonly property bool outlined: paletteMode !== "Classic" && level >= 11
+  readonly property color outlineColor:
+    paletteMode === "Theme" && level === 11 ? Commons.Color.accent : Commons.Color.foreground
+
+  // ---- visuals --------------------------------------------------------------
+
+  // Expanding rings for a big merge. Drawn behind the face, so they read as a
+  // pulse leaving the tile.
+  Rectangle {
+    id: ringA
+    anchors.fill: parent
+    radius: Style.cornerRadius
+    color: "transparent"
+    border.width: Math.max(2, Math.round(root.cell * 0.045))
+    border.color: root.fillColor
+    opacity: 0
+    transformOrigin: Item.Center
+  }
+
+  Rectangle {
+    id: ringB
+    anchors.fill: parent
+    radius: Style.cornerRadius
+    color: "transparent"
+    border.width: Math.max(2, Math.round(root.cell * 0.035))
+    border.color: root.fillColor
+    opacity: 0
+    transformOrigin: Item.Center
+  }
+
+  Rectangle {
+    id: face
+    anchors.fill: parent
+    radius: Style.cornerRadius
+    color: root.fillColor
+    border.width: root.outlined ? Math.max(1, Math.round(root.cell * 0.04)) : 0
+    border.color: root.outlineColor
+    transformOrigin: Item.Center
+    scale: root.kind === "spawn" || root.kind === "merge" ? 0 : 1
+    opacity: 1
+
+    Text {
+      anchors.centerIn: parent
+      text: root.value
+      color: root.textColor
+      font.family: Style.font.family
+      font.bold: true
+      font.pixelSize: {
+        var digits = String(root.value).length
+        var f = digits <= 2 ? 0.45 : digits === 3 ? 0.38 : digits === 4 ? 0.30 : 0.24
+        return Math.max(8, Math.round(root.cell * f))
+      }
+    }
+  }
+
+  // New tile: wait for the slide to land, then scale in.
+  SequentialAnimation {
+    id: spawnAnim
+    PauseAnimation { duration: root.slideMs }
+    NumberAnimation {
+      target: face; property: "scale"; from: 0; to: 1
+      duration: root.spawnMs; easing.type: Easing.OutBack
+    }
+  }
+
+  // Merge result: wait for the slide, overshoot to 1.2, settle at 1.
+  SequentialAnimation {
+    id: popAnim
+    PauseAnimation { duration: root.slideMs }
+    NumberAnimation {
+      target: face; property: "scale"; from: 0; to: 1.2
+      duration: root.popMs * 0.5; easing.type: Easing.OutQuad
+    }
+    NumberAnimation {
+      target: face; property: "scale"; to: 1
+      duration: root.popMs * 0.5; easing.type: Easing.InOutQuad
+    }
+  }
+
+  SequentialAnimation {
+    id: ringAnimA
+    PauseAnimation { duration: root.slideMs + root.popMs * 0.3 }
+    ParallelAnimation {
+      NumberAnimation { target: ringA; property: "scale"; from: 1; to: 1.7; duration: root.popMs * 2.4; easing.type: Easing.OutCubic }
+      NumberAnimation { target: ringA; property: "opacity"; from: 0.9; to: 0; duration: root.popMs * 2.4; easing.type: Easing.OutCubic }
+    }
+  }
+
+  SequentialAnimation {
+    id: ringAnimB
+    PauseAnimation { duration: root.slideMs + root.popMs * 0.9 }
+    ParallelAnimation {
+      NumberAnimation { target: ringB; property: "scale"; from: 1; to: 2.2; duration: root.popMs * 2.6; easing.type: Easing.OutCubic }
+      NumberAnimation { target: ringB; property: "opacity"; from: 0.7; to: 0; duration: root.popMs * 2.6; easing.type: Easing.OutCubic }
+    }
+  }
+
+  // Merge source: slide into the target cell, then fade away under the pop.
+  SequentialAnimation {
+    id: dyingAnim
+    PauseAnimation { duration: root.slideMs * 0.8 }
+    NumberAnimation {
+      target: face; property: "opacity"; to: 0
+      duration: root.popMs * 0.6; easing.type: Easing.OutQuad
+    }
+  }
+
+  // Tile put back by undo: a quick fade so the board does not just snap.
+  NumberAnimation {
+    id: restoreAnim
+    target: face; property: "opacity"; from: 0.25; to: 1
+    duration: root.popMs * 0.8; easing.type: Easing.OutQuad
+  }
+
+  onDyingChanged: if (dying) dyingAnim.start()
+
+  Component.onCompleted: {
+    if (kind === "spawn") spawnAnim.start()
+    else if (kind === "merge") {
+      popAnim.start()
+      if (fx > 0 && popMs > 0) {
+        ringAnimA.start()
+        if (fx > 1) ringAnimB.start()
+      }
+    } else if (kind === "restore") restoreAnim.start()
+  }
+}
