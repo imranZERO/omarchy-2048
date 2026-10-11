@@ -248,8 +248,38 @@ Panel {
     } else {
       startGame()
     }
+    // Writing the file is deferred until play pauses (and at least every 15 s).
+    // Each write to the state directory made something else in the shell do a
+    // burst of work: measured while playing fast, one write every 300 ms took
+    // the CPU from about 7 W to about 29 W, and no writes kept it at 7 W.
+    dirty = true
+    idleTimer.restart()
+    if (!waitTimer.running) waitTimer.start()
+  }
+
+  // True while savedGames is newer than the file.
+  property bool dirty: false
+
+  function writeState() {
+    idleTimer.stop()
+    waitTimer.stop()
+    dirty = false
     if (score > best) best = score
   }
+
+  Timer {
+    id: idleTimer
+    interval: 2000
+    onTriggered: root.writeState()
+  }
+
+  Timer {
+    id: waitTimer
+    interval: 15000
+    onTriggered: root.writeState()
+  }
+
+  Component.onDestruction: if (dirty) root.writeState()
 
   function restore(raw) {
     var data = null
@@ -291,7 +321,8 @@ Panel {
   // in-memory game. Re-reading on open keeps them in step.
   onOpenedChanged: {
     if (opened) {
-      stateFile.reload()
+      // The file is older than this instance's game while a write is pending.
+      if (!dirty) stateFile.reload()
       if (floating) prepareWindow()
     } else {
       page = ""

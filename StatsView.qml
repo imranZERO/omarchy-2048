@@ -42,14 +42,21 @@ Rectangle {
     return Number(n).toLocaleString(Qt.locale(), "f", 0)
   }
 
-  readonly property var rows: [
-    { label: "Games played", value: num(stats.games) },
-    { label: "Games won", value: num(stats.wins) + (stats.games > 0 ? "  (" + Stats.winRate(stats) + "%)" : "") },
-    { label: "Best score, " + size + "×" + size, value: num(best) },
-    { label: "Best tile", value: stats.bestTile > 0 ? num(stats.bestTile) : "—" },
-    { label: "Total moves", value: num(stats.moves) },
-    { label: "Moves per game", value: stats.games > 0 ? num(Stats.averageMoves(stats)) : "—" }
-  ]
+  // Only rebuilt while the page is showing: stats and best change on every move,
+  // and rebuilding the rows' delegates for a hidden page was measurable.
+  property var rows: []
+
+  Binding on rows {
+    when: root.shown
+    value: [
+      { label: "Games played", value: num(stats.games) },
+      { label: "Games won", value: num(stats.wins) + (stats.games > 0 ? "  (" + Stats.winRate(stats) + "%)" : "") },
+      { label: "Best score, " + size + "×" + size, value: num(best) },
+      { label: "Best tile", value: stats.bestTile > 0 ? num(stats.bestTile) : "—" },
+      { label: "Total moves", value: num(stats.moves) },
+      { label: "Moves per game", value: stats.games > 0 ? num(Stats.averageMoves(stats)) : "—" }
+    ]
+  }
 
   // Armed by the first click on Reset; the second click within 3s confirms.
   property bool confirmReset: false
