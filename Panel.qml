@@ -185,7 +185,6 @@ Panel {
     if (res.scoreDelta > 0) scorePill.flash(res.scoreDelta)
     updateEnd()
     playFor(res)
-    if (res.won) announceWin()
     save()
   }
 
@@ -210,14 +209,6 @@ Panel {
     var top = 0
     for (var i = 0; i < res.merges.length; i++) top = Math.max(top, res.merges[i].value)
     if (top > 0) sound.merge(top)
-  }
-
-  function announceWin() {
-    Util.execArgv([
-      "omarchy-notification-send", "--app-name", "2048",
-      "You reached " + game.goal + "!",
-      "Score " + score + " in " + game.moves + " moves"
-    ])
   }
 
   // ---- persistence ----------------------------------------------------------

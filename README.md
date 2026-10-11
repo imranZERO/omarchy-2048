@@ -80,7 +80,6 @@ Either click closes it again.
 The header row has the title and three icon buttons on the left (undo, new game and
 settings; hover for a tooltip) and your score and best score on the right. The score
 card is a button too: click it to open the stats. You can also swipe on the board.
-Reaching the goal tile sends a desktop notification.
 
 ### Commands
 
@@ -188,7 +187,6 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
   open, because a config reload drops runtime rules.
 - **Runs `python3 mixer.py`**, only when sound is on, which in turn runs one `pw-cat`
   to play the mixed sound. Both stop shortly after the popup closes.
-- **Runs `omarchy-notification-send`**, once, when you reach the goal tile.
 - **Reads** `~/.local/state/omarchy/current/theme/colors.toml`, for the theme's colors.
 - **Reads and writes** `~/.local/state/omarchy/imranzero-2048.json`: your games, best
   scores and stats.
