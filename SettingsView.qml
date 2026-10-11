@@ -90,7 +90,7 @@ Rectangle {
         color: Commons.Color.accent
         font.family: Style.font.family
         font.bold: true
-        font.pixelSize: Math.round(Style.font.display * root.k)
+        font.pixelSize: Math.round(Style.font.heading * root.k)
       }
     }
 
