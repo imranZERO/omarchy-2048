@@ -363,7 +363,22 @@ Panel {
 
   // The bar has one instance of this widget per monitor, each with its own
   // in-memory game. Re-reading on open keeps them in step.
+  // The dropdown's content settles in: a short slide down and scale up, on top of the
+  // panel's own fade. Window mode has no bar to come from, so it skips this.
+  property real enterT: 1
+
+  NumberAnimation {
+    id: enterAnim
+    target: root
+    property: "enterT"
+    from: 0
+    to: 1
+    duration: Style.duration(Math.round(130 * root.animSpeed))
+    easing.type: Easing.OutCubic
+  }
+
   onOpenedChanged: {
+    if (opened && !floating && animSpeed > 0) enterAnim.restart()
     if (opened) {
       // The file is older than this instance's game while a write is pending.
       if (!dirty) stateFile.reload()
@@ -554,6 +569,9 @@ Panel {
       anchors.right: parent.right
       anchors.top: parent.top
       spacing: root.px(8)
+      transformOrigin: Item.Top
+      scale: 0.96 + 0.04 * root.enterT
+      transform: Translate { y: -root.px(10) * (1 - root.enterT) }
 
       // One compact header row. On the left, the title and the actions as
       // borderless icon buttons; on the right, the scores in a single capsule.
