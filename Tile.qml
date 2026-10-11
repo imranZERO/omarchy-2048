@@ -92,6 +92,9 @@ Item {
 
   readonly property int level: Math.round(Math.log(value) / Math.LN2)
 
+  // Five digits do not fit a small cell, so 16384 and up read as 16K, 32K, 64K, 128K.
+  readonly property string label: value >= 16384 ? (value / 1024) + "K" : String(value)
+
   readonly property var classicFills: ({
     1: "#eee4da", 2: "#ede0c8", 3: "#f2b179", 4: "#f59563", 5: "#f67c5f", 6: "#f65e3b",
     7: "#edcf72", 8: "#edcc61", 9: "#edc850", 10: "#edc53f", 11: "#edc22e"
@@ -162,13 +165,13 @@ Item {
 
     Text {
       anchors.centerIn: parent
-      text: root.value
+      text: root.label
       color: root.textColor
       font.family: Style.font.family
       font.bold: true
       font.pixelSize: {
-        var digits = String(root.value).length
-        var f = digits <= 2 ? 0.45 : digits === 3 ? 0.38 : digits === 4 ? 0.30 : 0.24
+        var n = root.label.length
+        var f = n <= 2 ? 0.45 : n === 3 ? 0.38 : n === 4 ? 0.30 : 0.24
         return Math.max(8, Math.round(root.cell * f))
       }
     }
@@ -255,6 +258,29 @@ Item {
     }
   }
 
+  // 2048 glows in the accent (the Classic palette's gold), bigger tiles in their own color.
+  readonly property color glowColor: paletteMode === "Classic" ? "#edc22e" : level === 11 ? Commons.Color.accent : fillColor
+
+  // A soft halo for 2048 and up: two stacked outlines of falling opacity, which
+  // reads as a glow without a blur. Made once, only for tiles that earn it.
+  Component {
+    id: glowComp
+    Item {
+      anchors.fill: parent
+      z: -2
+      Repeater {
+        model: [{ s: 1.1, a: 0.07 }, { s: 1.045, a: 0.14 }]
+        delegate: Rectangle {
+          required property var modelData
+          anchors.fill: parent
+          scale: modelData.s
+          radius: Style.cornerRadius
+          color: Util.alpha(root.glowColor, modelData.a)
+        }
+      }
+    }
+  }
+
   // Merge source: slide into the target cell, then fade away under the pop.
   Component {
     id: dyingComp
@@ -289,6 +315,7 @@ Item {
   onDyingChanged: if (dying) dyingComp.createObject(root)
 
   Component.onCompleted: {
+    if (level >= 11) glowComp.createObject(face)
     if (kind === "spawn") spawnComp.createObject(root)
     else if (kind === "merge") {
       popComp.createObject(root)
