@@ -428,7 +428,7 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     // A "2" in a square, from the Nerd Font; the bar colors it like its other icons.
-    text: String.fromCodePoint(0xF03A7)
+    text: String.fromCodePoint(0xF03A9)
     // A little larger than the bar's default icon size, which makes this glyph look small.
     fontSize: Style.bar.iconFont + 3
     active: root.opened
