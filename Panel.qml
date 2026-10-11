@@ -588,13 +588,25 @@ Panel {
           anchors.verticalCenter: parent.verticalCenter
           spacing: root.px(10)
 
-          Text {
+          // The title, outlined in the accent color.
+          Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            text: "2048"
-            color: Commons.Color.accent
-            font.family: Style.font.family
-            font.bold: true
-            font.pixelSize: root.fpx(Style.font.heading + Style.space(6))
+            width: titleText.implicitWidth + root.px(16)
+            height: titleText.implicitHeight + root.px(4)
+            radius: Style.cornerRadius
+            color: "transparent"
+            border.width: Math.max(2, root.px(2))
+            border.color: Commons.Color.accent
+
+            Text {
+              id: titleText
+              anchors.centerIn: parent
+              text: "2048"
+              color: Commons.Color.accent
+              font.family: Style.font.family
+              font.bold: true
+              font.pixelSize: root.fpx(Style.font.heading + Style.space(4))
+            }
           }
 
           Row {
