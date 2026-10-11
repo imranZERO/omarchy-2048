@@ -22,7 +22,8 @@ The rules and animation timing are ported from
 - Board sizes 3×3 to 6×6. Each size keeps its own game and best score.
 - Tile colors from the active Omarchy theme, the original 2048 colors, or a
   single-hue shading of the theme accent.
-- A settings page inside the popup, including the window scale.
+- A settings page inside the popup, including the window scale and which digits to
+  show numbers with (Western, Bengali, Devanagari, Arabic or Kanji).
 - Optional sound effects: a low, weighty note per merge that climbs with tile size.
 - Your game, best scores and stats are saved between sessions.
 - No network access.
@@ -124,6 +125,7 @@ omarchy bar set imranzero.2048 scale 120 --json
 | Window scale     | 60 to 200 %              | Size of everything in the popup or window |
 | Board size       | 3 to 6                   | Each size keeps its own game and best score. Goal tile: 256 / 2048 / 4096 / 8192 |
 | Tile colors      | Theme, Classic, Mono     | Theme walks the active theme's hues; Classic is the original; Mono shades the accent |
+| Numerals         | Western, Bengali, Devanagari, Arabic, Kanji | Digits used on the tiles, scores and stats: 2048, ২০৪৮, २०४८, ٢٠٤٨, 二〇四八. Kanji is positional, one glyph per digit |
 | Animation speed  | Off, Fast, Normal, Slow  | The system reduce-motion setting is also respected |
 | Sound effects    | on / off (default on)    | |
 | Sound volume     | 10 to 100 % (default 60) | |
@@ -200,6 +202,8 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
 ## Troubleshooting
 
 - **Icons show as empty boxes:** the UI needs a Nerd Font. Omarchy's default has one.
+- **Numbers show as empty boxes with another Numerals setting:** the system needs a font
+  with those digits (Noto Sans Bengali, Devanagari, Arabic or CJK cover all of them).
 - **No sound:** check that Sound effects is on in Settings and that `python3` and
   `pw-cat` exist. The first sound after a long idle can be clipped only when the mixer is
   not running, for example when a move arrives through `omarchy-shell` while the popup is
@@ -234,6 +238,7 @@ folder, so keep the folder free of them. The symlink above is outside it, which 
 | `Board.qml`, `Tile.qml` | The grid, the tile model and every tile animation |
 | `Game.js` | The rules, in pure JS with no QML in it |
 | `Stats.js` | Lifetime stats, in pure JS |
+| `Numerals.js` | The digit sets for the Numerals setting, in pure JS |
 | `StatsView.qml`, `SettingsView.qml`, `ScoreBox.qml` | The stats page, the settings page, the score boxes |
 | `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE and BEST capsule (which opens the stats), and the key caps under the board |
 | `ThemePalette.qml` | Reads the theme's hue palette from `colors.toml` |

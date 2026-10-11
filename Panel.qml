@@ -5,6 +5,7 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 import "Game.js" as Game
+import "Numerals.js" as Numerals
 import "Stats.js" as Stats
 
 // 2048 in a bar popup. The bar shows a "2" in a square icon; clicking it (or
@@ -44,6 +45,11 @@ Panel {
     var p = String(opt("palette", "Theme"))
     return p === "Classic" || p === "Mono" ? p : "Theme"
   }
+  // Which digits to draw numbers with: Western, Bengali, Devanagari, Arabic or Kanji.
+  readonly property string numerals: {
+    var n = String(opt("numerals", "Western"))
+    return Numerals.valid(n) ? n : "Western"
+  }
   readonly property string animationSetting: {
     var a = String(opt("animationSpeed", "Normal"))
     return a === "Off" || a === "Fast" || a === "Slow" ? a : "Normal"
@@ -59,6 +65,7 @@ Panel {
     scale: Math.round(uiScale * 100),
     boardSize: boardSize,
     palette: paletteMode,
+    numerals: numerals,
     animationSpeed: animationSetting,
     sound: soundOn,
     soundVolume: soundVolume
@@ -646,6 +653,7 @@ Panel {
           score: root.score
           best: root.best
           uiScale: root.uiScale
+          numerals: root.numerals
           speed: root.animSpeed
           active: root.statsOpen
           tooltipText: "Stats (t)"
@@ -676,6 +684,7 @@ Panel {
           size: root.boardSize
           uiScale: root.uiScale
           speed: root.animSpeed
+          numerals: root.numerals
           paletteMode: root.paletteMode
           palette: themePalette
           onSwiped: function(dir) { root.doMove(dir) }
@@ -693,6 +702,7 @@ Panel {
           stats: root.stats
           best: root.best
           bests: root.bests
+          numerals: root.numerals
           size: root.boardSize
           uiScale: root.uiScale
           onCloseRequested: root.page = ""

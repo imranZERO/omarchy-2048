@@ -50,6 +50,10 @@ Rectangle {
         { label: "5×5", value: 5 }, { label: "6×6", value: 6 } ] },
       { key: "palette", label: "Tile colors", kind: "choice", options: [
         { label: "Theme", value: "Theme" }, { label: "Classic", value: "Classic" }, { label: "Mono", value: "Mono" } ] },
+      { key: "numerals", label: "Numerals", kind: "cycle", options: [
+        { label: "2048", value: "Western" }, { label: "২০৪৮", value: "Bengali" },
+        { label: "२०४८", value: "Devanagari" }, { label: "٢٠٤٨", value: "Arabic" },
+        { label: "二〇四八", value: "Kanji" } ] },
       { key: "animationSpeed", label: "Animations", kind: "choice", options: [
         { label: "Off", value: "Off" }, { label: "Fast", value: "Fast" },
         { label: "Normal", value: "Normal" }, { label: "Slow", value: "Slow" } ] },
@@ -116,7 +120,8 @@ Rectangle {
           id: control
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
-          sourceComponent: row.modelData.kind === "stepper" ? stepperComponent : choiceComponent
+          sourceComponent: row.modelData.kind === "stepper" ? stepperComponent
+            : row.modelData.kind === "cycle" ? cycleComponent : choiceComponent
         }
 
         Component {
@@ -157,6 +162,53 @@ Rectangle {
                   onClicked: root.changed(row.modelData.key, choice.modelData.value)
                 }
               }
+            }
+          }
+        }
+
+        // One value at a time, with arrows either side: for lists too long to lay out
+        // as a row of choices. The options' labels are samples of what they select.
+        Component {
+          id: cycleComponent
+
+          Row {
+            id: cycler
+            spacing: Math.round(Style.space(4) * root.k)
+
+            readonly property var options: row.modelData.options
+            readonly property int index: {
+              for (var i = 0; i < options.length; i++)
+                if (options[i].value === root.values[row.modelData.key]) return i
+              return 0
+            }
+
+            function step(direction) {
+              var next = (index + direction + options.length) % options.length
+              root.changed(row.modelData.key, options[next].value)
+            }
+
+            StepButton {
+              glyph: "‹"
+              onActivated: cycler.step(-1)
+            }
+
+            Item {
+              implicitWidth: Math.round(Style.space(78) * root.k)
+              implicitHeight: Math.round(Style.space(24) * root.k)
+
+              Text {
+                anchors.centerIn: parent
+                text: cycler.options[cycler.index].label
+                color: Commons.Color.foreground
+                font.family: Style.font.family
+                font.bold: true
+                font.pixelSize: Math.round(Style.font.bodySmall * root.k)
+              }
+            }
+
+            StepButton {
+              glyph: "›"
+              onActivated: cycler.step(1)
             }
           }
         }

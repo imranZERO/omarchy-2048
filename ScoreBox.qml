@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
+import "Numerals.js" as Numerals
 
 // A labelled number. flash(delta) floats a "+N" up from the box and pulses the
 // number, for a move that scored.
@@ -10,6 +11,7 @@ Rectangle {
   property string title: ""
   property int value: 0
   property real uiScale: 1.0
+  property string numerals: "Western"
   // Animation time multiplier; 0 turns the effect off.
   property real speed: 1.0
   // No background of its own, for use inside a shared container.
@@ -19,7 +21,7 @@ Rectangle {
 
   function flash(delta) {
     if (speed <= 0 || Style.duration(1) === 0) return
-    gainComponent.createObject(box, { text: "+" + delta })
+    gainComponent.createObject(box, { text: "+" + Numerals.convert(delta, box.numerals) })
     pulse.restart()
   }
 
@@ -52,7 +54,7 @@ Rectangle {
     Text {
       id: number
       anchors.horizontalCenter: parent.horizontalCenter
-      text: Number(box.value).toLocaleString(Qt.locale(), "f", 0)
+      text: Numerals.convert(Number(box.value).toLocaleString(Qt.locale(), "f", 0), box.numerals)
       property real hot: 0
       color: Qt.tint(Commons.Color.foreground, Util.alpha(Commons.Color.accent, hot))
       font.family: Style.font.family

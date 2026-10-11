@@ -11,6 +11,7 @@ Rectangle {
   property int score: 0
   property int best: 0
   property real uiScale: 1.0
+  property string numerals: "Western"
   // Animation time multiplier; 0 turns the effects off.
   property real speed: 1.0
   // True while the page it opens is showing.
@@ -47,6 +48,7 @@ Rectangle {
       plain: true
       title: "SCORE"
       value: root.score
+      numerals: root.numerals
       uiScale: root.uiScale
       speed: root.speed
     }
@@ -63,6 +65,7 @@ Rectangle {
       plain: true
       title: "BEST"
       value: root.best
+      numerals: root.numerals
       uiScale: root.uiScale
       speed: root.speed
     }

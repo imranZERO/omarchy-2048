@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Effects
 import qs.Commons
 import qs.Commons as Commons
+import "Numerals.js" as Numerals
 
 // The playfield. Owns a ListModel of tiles keyed by stable ids, so a move
 // only edits positions and the Tile Behaviors do the animating. It knows
@@ -17,6 +18,8 @@ Item {
   property real speed: 1.0
   // "Theme", "Classic" or "Mono"
   property string paletteMode: "Theme"
+  // The digits numbers are drawn with; see Numerals.js.
+  property string numerals: "Western"
   // The theme's hue palette (a ThemePalette), handed to each tile.
   property var palette: null
 
@@ -164,7 +167,7 @@ Item {
   // A badge on the board's top edge for a streak of scoring moves.
   function showCombo(n) {
     if (speed <= 0 || Style.duration(1) === 0) return
-    comboText.text = "COMBO ×" + n
+    comboText.text = "COMBO ×" + Numerals.convert(n, numerals)
     comboAnim.restart()
   }
 
@@ -310,6 +313,7 @@ Item {
       delegate: Tile {
         palette: root.palette
         paletteMode: root.paletteMode
+        numerals: root.numerals
         cell: root.cell
         gap: root.gap
         slideMs: root.slideMs
@@ -351,7 +355,7 @@ Item {
   // The score counting up to endScore while the overlay opens.
   property real shownScore: 0
 
-  function num(n) { return Number(n).toLocaleString(Qt.locale(), "f", 0) }
+  function num(n) { return Numerals.convert(Number(n).toLocaleString(Qt.locale(), "f", 0), numerals) }
 
   onOverlayOnChanged: {
     if (!overlayOn) return

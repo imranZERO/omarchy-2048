@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Commons as Commons
+import "Numerals.js" as Numerals
 
 // One board tile. Position comes from col/row and is animated by the Behaviors
 // below, so moving a tile is just changing those two numbers. New tiles play
@@ -22,6 +23,8 @@ Item {
   property int spawnMs: 200
   // "Theme", "Classic" or "Mono"
   property string paletteMode: "Theme"
+  // The digits the value is drawn with; see Numerals.js.
+  property string numerals: "Western"
   // The theme's hue palette (a ThemePalette), set by Board.
   property var palette: null
 
@@ -93,7 +96,7 @@ Item {
   readonly property int level: Math.round(Math.log(value) / Math.LN2)
 
   // Five digits do not fit a small cell, so 16384 and up read as 16K, 32K, 64K, 128K.
-  readonly property string label: value >= 16384 ? (value / 1024) + "K" : String(value)
+  readonly property string label: Numerals.convert(value >= 16384 ? (value / 1024) + "K" : String(value), numerals)
 
   readonly property var classicFills: ({
     1: "#eee4da", 2: "#ede0c8", 3: "#f2b179", 4: "#f59563", 5: "#f67c5f", 6: "#f65e3b",
@@ -172,7 +175,9 @@ Item {
       font.pixelSize: {
         var n = root.label.length
         var f = n <= 2 ? 0.45 : n === 3 ? 0.38 : n === 4 ? 0.30 : 0.24
-        return Math.max(8, Math.round(root.cell * f))
+        // The usual size, unless the label would be wider than the tile.
+        var fit = 0.86 / (n * Numerals.width(root.numerals))
+        return Math.max(8, Math.round(root.cell * Math.min(f, fit)))
       }
     }
   }

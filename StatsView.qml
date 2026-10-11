@@ -3,6 +3,7 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 import "Stats.js" as Stats
+import "Numerals.js" as Numerals
 
 // Lifetime stats, drawn over the board. Panel owns the numbers; this only shows
 // them and reports button presses.
@@ -12,6 +13,7 @@ Rectangle {
   property bool shown: false
   property var stats: ({ games: 0, wins: 0, moves: 0, bestTile: 0 })
   property int best: 0
+  property string numerals: "Western"
   // Best score per board size, keyed "3" to "6".
   property var bests: ({})
   // "all" shows the lifetime totals, "size" the current board size.
@@ -43,7 +45,7 @@ Rectangle {
   }
 
   function num(n) {
-    return Number(n).toLocaleString(Qt.locale(), "f", 0)
+    return Numerals.convert(Number(n).toLocaleString(Qt.locale(), "f", 0), numerals)
   }
 
   // Only rebuilt while the page is showing: stats and best change on every move,
@@ -63,8 +65,8 @@ Rectangle {
       }
       return [
         { label: "Games played", value: num(c.games) },
-        { label: "Games won", value: num(c.wins) + (c.games > 0 ? "  (" + Stats.winRate(c) + "%)" : "") },
-        { label: all ? "Best score" : "Best score, " + size + "×" + size, value: num(bestScore) },
+        { label: "Games won", value: num(c.wins) + (c.games > 0 ? "  (" + num(Stats.winRate(c)) + "%)" : "") },
+        { label: all ? "Best score" : "Best score, " + num(size) + "×" + num(size), value: num(bestScore) },
         { label: "Best tile", value: c.bestTile > 0 ? num(c.bestTile) : "—" },
         { label: "Total moves", value: num(c.moves) },
         { label: "Moves per game", value: c.games > 0 ? num(Stats.averageMoves(c)) : "—" }
