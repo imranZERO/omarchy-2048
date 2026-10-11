@@ -95,11 +95,19 @@ omarchy-shell imranzero.2048 stats
 omarchy-shell imranzero.2048 settings
 ```
 
-A Hyprland keybind to toggle it:
+### Keybinding
 
+Add a binding in `~/.config/hypr/bindings.lua`, using Omarchy's `{ panel = ... }` form,
+which toggles a shell panel by its plugin id:
+
+```lua
+o.bind("SUPER + SHIFT + G", "2048", { panel = "imranzero.2048" })
 ```
-bind = SUPER CTRL, 2, exec, omarchy-shell imranzero.2048 toggle
-```
+
+This runs `omarchy-shell shell toggle imranzero.2048`, so it follows the Open as setting
+like a click on the bar icon does. `SUPER + SHIFT + G` is not used by Omarchy's defaults,
+but check yours with `omarchy menu keybindings --print`. To take a key that is already
+bound, use `o.rebind(...)` with the same arguments instead of `o.bind(...)`.
 
 ## Settings
 
