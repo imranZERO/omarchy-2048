@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Io
 
 // Plays the generated effects in sounds/. Does nothing unless `enabled`, so the

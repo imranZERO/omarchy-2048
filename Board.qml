@@ -329,7 +329,7 @@ Item {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton
     property point origin: Qt.point(0, 0)
-    readonly property real threshold: Style.space(24) * Math.max(0.6, root.uiScale)
+    readonly property real threshold: Style.space(24) * root.k
 
     onPressed: function(mouse) { origin = Qt.point(mouse.x, mouse.y) }
     onReleased: function(mouse) {
@@ -414,7 +414,7 @@ Item {
       Behavior on scale {
         NumberAnimation { duration: Style.duration(Math.round(350 * root.speed)); easing.type: Easing.OutBack }
       }
-      spacing: Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
+      spacing: Math.round(Style.space(14) * root.k)
 
       Text {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -424,13 +424,13 @@ Item {
         font.bold: true
         font.letterSpacing: 1
         font.capitalization: Font.AllUppercase
-        font.pixelSize: Math.round(Style.font.body * Math.max(0.6, root.uiScale))
+        font.pixelSize: Math.round(Style.font.body * root.k)
       }
 
       // The score, counting up, and what it took.
       Column {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(2) * Math.max(0.6, root.uiScale))
+        spacing: Math.round(Style.space(2) * root.k)
 
         Text {
           anchors.horizontalCenter: parent.horizontalCenter
@@ -438,7 +438,7 @@ Item {
           color: Commons.Color.accent
           font.family: Style.font.family
           font.bold: true
-          font.pixelSize: Math.round(Style.font.display * 1.7 * Math.max(0.6, root.uiScale))
+          font.pixelSize: Math.round(Style.font.display * 1.7 * root.k)
         }
 
         Text {
@@ -446,18 +446,18 @@ Item {
           text: "points in " + root.num(root.endMoves) + (root.endMoves === 1 ? " move" : " moves")
           color: Commons.Color.foreground
           font.family: Style.font.family
-          font.pixelSize: Math.round(Style.font.body * Math.max(0.6, root.uiScale))
+          font.pixelSize: Math.round(Style.font.body * root.k)
         }
       }
 
       Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+        spacing: Math.round(Style.space(6) * root.k)
 
         Rectangle {
           visible: root.endTile > 0
-          implicitWidth: tileChip.implicitWidth + Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
-          implicitHeight: tileChip.implicitHeight + Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+          implicitWidth: tileChip.implicitWidth + Math.round(Style.space(14) * root.k)
+          implicitHeight: tileChip.implicitHeight + Math.round(Style.space(6) * root.k)
           width: implicitWidth
           height: implicitHeight
           radius: height / 2
@@ -471,14 +471,14 @@ Item {
             text: "Best tile " + root.endTile
             color: Commons.Color.foreground
             font.family: Style.font.family
-            font.pixelSize: Math.round(Style.font.caption * Math.max(0.6, root.uiScale))
+            font.pixelSize: Math.round(Style.font.caption * root.k)
           }
         }
 
         Rectangle {
           visible: root.endBest
-          implicitWidth: bestChip.implicitWidth + Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
-          implicitHeight: bestChip.implicitHeight + Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+          implicitWidth: bestChip.implicitWidth + Math.round(Style.space(14) * root.k)
+          implicitHeight: bestChip.implicitHeight + Math.round(Style.space(6) * root.k)
           width: implicitWidth
           height: implicitHeight
           radius: height / 2
@@ -491,14 +491,14 @@ Item {
             color: Commons.Color.background
             font.family: Style.font.family
             font.bold: true
-            font.pixelSize: Math.round(Style.font.caption * Math.max(0.6, root.uiScale))
+            font.pixelSize: Math.round(Style.font.caption * root.k)
           }
         }
       }
 
       Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(10) * Math.max(0.6, root.uiScale))
+        spacing: Math.round(Style.space(10) * root.k)
 
         OverlayButton {
           visible: root.shownState === "won"
@@ -522,7 +522,7 @@ Item {
     property bool primary: false
     signal activated()
 
-    readonly property real k: Math.max(0.6, root.uiScale)
+    readonly property real k: root.k
 
     implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * k)
     implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * k)
