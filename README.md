@@ -26,7 +26,7 @@ The rules and animation timing are ported from
 ## Install
 
 ```sh
-omarchy plugin add <git-url-of-this-repo> --enable
+omarchy plugin add https://github.com/imranZERO/omarchy-2048.git --enable
 ```
 
 This clones the plugin into `~/.config/omarchy/plugins/imranzero.2048` (the id from
@@ -208,7 +208,7 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
 ## Development
 
 ```sh
-git clone <git-url-of-this-repo> ~/Work/omarchy-2048
+git clone https://github.com/imranZERO/omarchy-2048.git ~/Work/omarchy-2048
 ln -s ~/Work/omarchy-2048 ~/.config/omarchy/plugins/imranzero.2048
 omarchy plugin validate ~/Work/omarchy-2048
 omarchy-shell shell rescanPlugins
