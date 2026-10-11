@@ -88,6 +88,21 @@ QtObject {
     return c
   }
 
+  // A hot streak: a quiet high note just after the move's own sound, climbing
+  // with the streak (3 in a row is the first of three notes, then it tops out).
+  property int streakNote: 5
+
+  property Timer streakTimer: Timer {
+    interval: 90
+    onTriggered: root.play("merge" + root.streakNote, 0, 0.4)
+  }
+
+  function streak(count) {
+    if (!enabled || volume <= 0) return
+    streakNote = Math.min(7, count + 2)
+    streakTimer.restart()
+  }
+
   // Bigger tiles ring higher: 4 is the lowest note, 512 and up the highest.
   function merge(value) {
     var level = Math.round(Math.log(value) / Math.LN2)

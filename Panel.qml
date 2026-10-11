@@ -146,10 +146,13 @@ Panel {
   }
 
   property bool bestBeaten: false
+  // Scoring moves in a row; a move that scores nothing, or a new game or undo, resets it.
+  property int combo: 0
   property real lastBlockedMs: 0
 
   function startGame() {
     bestBeaten = false
+    combo = 0
     game = Game.newGame(boardSize)
     score = 0
     setHistory([])
@@ -206,8 +209,14 @@ Panel {
     Stats.recordMove(stats, game, res)
     bumpStats()
     if (res.scoreDelta > 0) scorePill.flash(res.scoreDelta)
+    // A streak of scoring moves earns a badge from the third on, and a quiet note.
+    combo = res.scoreDelta > 0 ? combo + 1 : 0
     updateEnd()
     playFor(res)
+    if (combo >= 3 && !res.won && !res.over) {
+      board.showCombo(combo)
+      sound.streak(combo)
+    }
     save()
   }
 
@@ -221,6 +230,7 @@ Panel {
     bumpStats()
     game = previous
     score = game.score
+    combo = 0
     setHistory(list)
     board.rebuild(Game.tiles(game), "restore")
     updateEnd()
@@ -294,6 +304,7 @@ Panel {
     best = Math.max(0, Number(bests[key]) || 0)
     var saved = savedGames[key] ? Game.fromSaved(savedGames[key]) : null
     bestBeaten = false
+    combo = 0
     if (saved && saved.size === boardSize) {
       game = saved
       score = game.score

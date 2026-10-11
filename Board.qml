@@ -24,6 +24,7 @@ Item {
   readonly property var gapBase: ({ 3: 10, 4: 10, 5: 8, 6: 8 })
   readonly property int cell: Math.max(16, Math.round(Style.space(cellBase[size] || 64) * uiScale))
   readonly property int gap: Math.max(3, Math.round(Style.space(gapBase[size] || 10) * uiScale))
+  readonly property real k: Math.max(0.6, uiScale)
   readonly property int side: size * cell + (size + 1) * gap
 
   readonly property int slideMs: Style.duration(Math.round(110 * speed))
@@ -62,6 +63,10 @@ Item {
     dyingTimer.stop()
     thumpAnim.stop()
     thumpScale = 1
+    burstAnim.stop()
+    burst.running = false
+    comboAnim.stop()
+    comboBadge.opacity = 0
     tilesModel.clear()
     for (var i = 0; i < list.length; i++) {
       var t = list[i]
@@ -105,6 +110,13 @@ Item {
     }
     if (thump > 0) thumpBoard(thump)
 
+    // The move that reached the goal: confetti from the tile that did it.
+    if (res.won) {
+      var top = res.merges[0]
+      for (i = 1; i < res.merges.length; i++) if (res.merges[i].value > top.value) top = res.merges[i]
+      celebrate(top.x, top.y)
+    }
+
     if (res.spawned) {
       var s = res.spawned
       tilesModel.append({ tid: s.id, value: s.value, col: s.x, row: s.y, kind: "spawn", dying: false, fx: 0 })
@@ -144,6 +156,103 @@ Item {
     PauseAnimation { duration: root.slideMs }
     NumberAnimation { target: root; property: "thumpScale"; to: root.thumpTo; duration: 70 * root.speed; easing.type: Easing.OutQuad }
     NumberAnimation { target: root; property: "thumpScale"; to: 1; duration: 200 * root.speed; easing.type: Easing.OutBack }
+  }
+
+  // ---- combo badge ----------------------------------------------------------
+
+  // A badge on the board's top edge for a streak of scoring moves.
+  function showCombo(n) {
+    if (speed <= 0 || Style.duration(1) === 0) return
+    comboText.text = "COMBO ×" + n
+    comboAnim.restart()
+  }
+
+  Rectangle {
+    id: comboBadge
+    z: 5
+    anchors.horizontalCenter: parent.horizontalCenter
+    y: -Math.round(height * 0.55)
+    width: comboText.implicitWidth + Math.round(Style.space(14) * root.k)
+    height: comboText.implicitHeight + Math.round(Style.space(6) * root.k)
+    radius: height / 2
+    color: Commons.Color.accent
+    opacity: 0
+    visible: opacity > 0
+    transformOrigin: Item.Center
+
+    Text {
+      id: comboText
+      anchors.centerIn: parent
+      color: Commons.Color.background
+      font.family: Style.font.family
+      font.bold: true
+      font.pixelSize: Math.round(Style.font.caption * root.k)
+    }
+  }
+
+  SequentialAnimation {
+    id: comboAnim
+    ScriptAction { script: { comboBadge.opacity = 1; comboBadge.scale = 0.6 } }
+    NumberAnimation { target: comboBadge; property: "scale"; to: 1.18; duration: 90 * root.speed; easing.type: Easing.OutQuad }
+    NumberAnimation { target: comboBadge; property: "scale"; to: 1; duration: 140 * root.speed; easing.type: Easing.OutBack }
+    PauseAnimation { duration: 650 * root.speed }
+    NumberAnimation { target: comboBadge; property: "opacity"; to: 0; duration: 250 * root.speed }
+  }
+
+  // ---- win confetti ----------------------------------------------------------
+
+  // A burst of small squares from the cell (col, row). One animated number drives
+  // every piece along its own arc, so the cost is the pieces being drawn for
+  // about a second, once per game.
+  function celebrate(col, row) {
+    if (speed <= 0 || Style.duration(1) === 0) return
+    burst.ox = gap + col * (cell + gap) + cell / 2
+    burst.oy = gap + row * (cell + gap) + cell / 2
+    burstAnim.restart()
+  }
+
+  Item {
+    id: burst
+    z: 4
+    property real ox: 0
+    property real oy: 0
+    // 0 to 1 over the burst; the pieces exist only while it runs.
+    property real t: 0
+    property bool running: false
+    readonly property var colors: {
+      var c = [Commons.Color.accent, Commons.Color.urgent, Commons.Color.foreground]
+      var ramp = root.palette ? root.palette.ramp : null
+      return ramp ? c.concat(ramp) : c
+    }
+
+    Repeater {
+      model: burst.running ? 28 : 0
+      delegate: Rectangle {
+        id: piece
+        required property int index
+        // Spread by the golden angle, so any count fans out evenly.
+        readonly property real angle: index * 2.399963
+        readonly property real fling: root.cell * (1.6 + 1.8 * ((index * 0.618) % 1))
+        readonly property real sz: Math.max(3, Math.round(root.cell * (0.08 + 0.07 * ((index * 0.37) % 1))))
+        width: sz
+        height: sz
+        radius: index % 3 === 0 ? sz / 2 : 1
+        color: burst.colors[index % burst.colors.length]
+        x: burst.ox + Math.cos(angle) * fling * burst.t - sz / 2
+        y: burst.oy + Math.sin(angle) * fling * burst.t + root.cell * 2.2 * burst.t * burst.t - sz / 2
+        rotation: index * 37 + burst.t * 300 * (index % 2 ? 1 : -1)
+        opacity: 1 - burst.t * burst.t * burst.t
+      }
+    }
+  }
+
+  SequentialAnimation {
+    id: burstAnim
+    // Let the tile land first.
+    PauseAnimation { duration: root.slideMs + root.popMs * 0.4 }
+    ScriptAction { script: { burst.t = 0; burst.running = true } }
+    NumberAnimation { target: burst; property: "t"; from: 0; to: 1; duration: 1100 * root.speed; easing.type: Easing.OutQuad }
+    ScriptAction { script: burst.running = false }
   }
 
   // Enter/Space: whatever the overlay's main button is.
