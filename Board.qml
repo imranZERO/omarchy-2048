@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import qs.Commons
 import qs.Commons as Commons
 
@@ -295,6 +296,14 @@ Item {
     height: parent.height
     scale: root.thumpScale
 
+    // After a game over the board goes grey and dim behind the overlay. The layer
+    // exists only while that is showing, so play never pays for it.
+    layer.enabled: root.overlayOn && root.shownState === "over"
+    layer.effect: MultiEffect {
+      saturation: -0.85
+      brightness: -0.08
+    }
+
     Repeater {
       id: tileRepeater
       model: tilesModel
@@ -380,7 +389,7 @@ Item {
     id: overlay
     anchors.fill: parent
     radius: Style.cornerRadius
-    color: Util.alpha(Commons.Color.popups.background, 0.94)
+    color: Util.alpha(Commons.Color.popups.background, 0.92)
     opacity: root.overlayOn ? 1 : 0
     visible: opacity > 0
 
@@ -405,8 +414,8 @@ Item {
 
       Text {
         anchors.horizontalCenter: parent.horizontalCenter
-        text: root.shownState === "won" ? "You win!" : "Game over!"
-        color: Commons.Color.muted
+        text: root.shownState === "won" ? "You win!" : "Game over"
+        color: Util.alpha(Commons.Color.foreground, 0.8)
         font.family: Style.font.family
         font.bold: true
         font.letterSpacing: 1
@@ -448,7 +457,9 @@ Item {
           width: implicitWidth
           height: implicitHeight
           radius: height / 2
-          color: Util.alpha(Commons.Color.foreground, 0.1)
+          color: Util.alpha(Commons.Color.foreground, 0.14)
+          border.width: 1
+          border.color: Util.alpha(Commons.Color.foreground, 0.3)
 
           Text {
             id: tileChip
@@ -509,14 +520,17 @@ Item {
 
     readonly property real k: Math.max(0.6, root.uiScale)
 
-    implicitWidth: btnText.implicitWidth + Math.round(Style.space(24) * k)
-    implicitHeight: btnText.implicitHeight + Math.round(Style.space(12) * k)
+    implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * k)
+    implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * k)
     radius: Style.cornerRadius
-    scale: area.pressed ? 0.95 : area.containsMouse ? 1.04 : 1
+    scale: area.pressed ? 0.96 : 1
     Behavior on scale { NumberAnimation { duration: Style.duration(90); easing.type: Easing.OutQuad } }
+    // Solid fills, so the labels stay readable over whatever is behind the overlay.
     color: primary
-      ? Util.alpha(Commons.Color.accent, area.containsMouse ? 0.9 : 0.75)
-      : Util.alpha(Commons.Color.foreground, area.containsMouse ? 0.18 : 0.1)
+      ? (area.containsMouse ? Qt.lighter(Commons.Color.accent, 1.15) : Commons.Color.accent)
+      : Util.alpha(Commons.Color.foreground, area.containsMouse ? 0.24 : 0.16)
+    border.width: primary ? 0 : 1
+    border.color: Util.alpha(Commons.Color.foreground, 0.35)
 
     Text {
       id: btnText
