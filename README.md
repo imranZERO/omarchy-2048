@@ -144,15 +144,17 @@ The widget makes the window float itself, with no change to your Hyprland config
 Undo steps back through the last 50 moves of the current game. The history lasts while
 the shell runs and is not saved across restarts.
 
-The stats page shows games, wins, moves, best tile, and the best score for the current
-board size. Open it by clicking the score card, with `t`, or with the `stats` command.
+The stats page shows games, wins, moves, best tile and the best score, for everything or
+for the current board size (switch at the top right; per-size numbers count from the
+version that added them, so they start at zero for an old save). Open it by clicking the score card, with `t`, or with the `stats` command.
 A game counts from its first move; undoing that move takes it back.
 
 ## Sound
 
 On by default; turn it off in Settings. One profile: a pitch-dropping "bloop" over a
 thump, with a short bright tick on the attack. Merges climb a pentatonic scale from C2,
-so bigger tiles ring higher and hit a little harder.
+so bigger tiles ring higher and hit a little harder. A streak of three or more scoring
+moves adds a quiet high note after the move's own sound, climbing with the streak.
 
 - Every sound is matched to the same A-weighted loudness, so a small merge and a big one
   sound equally loud.

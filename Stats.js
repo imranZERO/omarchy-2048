@@ -7,37 +7,78 @@
 //   wins      games that reached the goal tile
 //   moves     moves made
 //   bestTile  largest tile ever built
+//   sizes     the same four numbers per board size, keyed "3" to "6". Counted
+//             from when this was added, so they start at zero for old saves.
 
-function empty() {
+var FIELDS = ["games", "wins", "moves", "bestTile"]
+
+function counts() {
   return { games: 0, wins: 0, moves: 0, bestTile: 0 }
 }
 
+function empty() {
+  var s = counts()
+  s.sizes = {}
+  return s
+}
+
+function cleanCounts(raw) {
+  var c = counts()
+  if (!raw || typeof raw !== "object") return c
+  for (var i = 0; i < FIELDS.length; i++) {
+    var n = Math.floor(Number(raw[FIELDS[i]]))
+    if (isFinite(n) && n > 0) c[FIELDS[i]] = n
+  }
+  return c
+}
+
 function clean(raw) {
-  var s = empty()
-  if (!raw || typeof raw !== "object") return s
-  var keys = Object.keys(s)
-  for (var i = 0; i < keys.length; i++) {
-    var n = Math.floor(Number(raw[keys[i]]))
-    if (isFinite(n) && n > 0) s[keys[i]] = n
+  var s = cleanCounts(raw)
+  s.sizes = {}
+  if (raw && raw.sizes && typeof raw.sizes === "object") {
+    for (var size = 3; size <= 6; size++) {
+      var key = String(size)
+      if (raw.sizes[key]) s.sizes[key] = cleanCounts(raw.sizes[key])
+    }
   }
   return s
 }
 
+// The numbers for one board size, all zero when none were recorded.
+function forSize(stats, size) {
+  return (stats.sizes && stats.sizes[String(size)]) || counts()
+}
+
+function bucket(stats, size) {
+  if (!stats.sizes) stats.sizes = {}
+  var key = String(size)
+  if (!stats.sizes[key]) stats.sizes[key] = counts()
+  return stats.sizes[key]
+}
+
 // Call after a successful Game.move(). `game` is the state after the move.
 function recordMove(stats, game, res) {
-  stats.moves++
-  if (game.moves === 1) stats.games++
-  if (res.won) stats.wins++
-  for (var i = 0; i < res.merges.length; i++)
-    if (res.merges[i].value > stats.bestTile) stats.bestTile = res.merges[i].value
+  var targets = [stats, bucket(stats, game.size)]
+  for (var t = 0; t < targets.length; t++) {
+    var c = targets[t]
+    c.moves++
+    if (game.moves === 1) c.games++
+    if (res.won) c.wins++
+    for (var i = 0; i < res.merges.length; i++)
+      if (res.merges[i].value > c.bestTile) c.bestTile = res.merges[i].value
+  }
 }
 
 // Call when an undo steps from `before` back to `after` (both Game states).
 // The best tile is left alone: it records what was built, not what survived.
 function recordUndo(stats, before, after) {
-  if (stats.moves > 0) stats.moves--
-  if (before.moves === 1 && after.moves === 0 && stats.games > 0) stats.games--
-  if (before.won && !after.won && stats.wins > 0) stats.wins--
+  var targets = [stats, bucket(stats, before.size)]
+  for (var t = 0; t < targets.length; t++) {
+    var c = targets[t]
+    if (c.moves > 0) c.moves--
+    if (before.moves === 1 && after.moves === 0 && c.games > 0) c.games--
+    if (before.won && !after.won && c.wins > 0) c.wins--
+  }
 }
 
 function winRate(stats) {

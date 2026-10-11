@@ -643,6 +643,7 @@ Panel {
           shown: root.statsOpen
           stats: root.stats
           best: root.best
+          bests: root.bests
           size: root.boardSize
           uiScale: root.uiScale
           onCloseRequested: root.page = ""

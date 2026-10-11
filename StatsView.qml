@@ -12,6 +12,10 @@ Rectangle {
   property bool shown: false
   property var stats: ({ games: 0, wins: 0, moves: 0, bestTile: 0 })
   property int best: 0
+  // Best score per board size, keyed "3" to "6".
+  property var bests: ({})
+  // "all" shows the lifetime totals, "size" the current board size.
+  property string scope: "all"
   property int size: 4
   property real uiScale: 1.0
 
@@ -48,14 +52,24 @@ Rectangle {
 
   Binding on rows {
     when: root.shown
-    value: [
-      { label: "Games played", value: num(stats.games) },
-      { label: "Games won", value: num(stats.wins) + (stats.games > 0 ? "  (" + Stats.winRate(stats) + "%)" : "") },
-      { label: "Best score, " + size + "×" + size, value: num(best) },
-      { label: "Best tile", value: stats.bestTile > 0 ? num(stats.bestTile) : "—" },
-      { label: "Total moves", value: num(stats.moves) },
-      { label: "Moves per game", value: stats.games > 0 ? num(Stats.averageMoves(stats)) : "—" }
-    ]
+    value: {
+      var all = root.scope === "all"
+      var c = all ? stats : Stats.forSize(stats, size)
+      var bestScore = best
+      if (all) {
+        bestScore = 0
+        var keys = Object.keys(bests)
+        for (var i = 0; i < keys.length; i++) bestScore = Math.max(bestScore, Number(bests[keys[i]]) || 0)
+      }
+      return [
+        { label: "Games played", value: num(c.games) },
+        { label: "Games won", value: num(c.wins) + (c.games > 0 ? "  (" + Stats.winRate(c) + "%)" : "") },
+        { label: all ? "Best score" : "Best score, " + size + "×" + size, value: num(bestScore) },
+        { label: "Best tile", value: c.bestTile > 0 ? num(c.bestTile) : "—" },
+        { label: "Total moves", value: num(c.moves) },
+        { label: "Moves per game", value: c.games > 0 ? num(Stats.averageMoves(c)) : "—" }
+      ]
+    }
   }
 
   // Armed by the first click on Reset; the second click within 3s confirms.
@@ -81,23 +95,69 @@ Rectangle {
     anchors.margins: Math.round(Style.space(16) * root.k)
     spacing: Math.round(Style.space(10) * root.k)
 
-    Row {
-      spacing: Math.round(Style.space(8) * root.k)
+    Item {
+      width: parent.width
+      height: Math.max(headerLeft.implicitHeight, scopeSwitch.implicitHeight)
 
-      Button {
-        iconText: String.fromCodePoint(0xF004D)
-        iconSize: Math.round(Style.font.icon * root.k)
-        tooltipText: "Back"
-        onClicked: root.closeRequested()
+      Row {
+        id: headerLeft
+        spacing: Math.round(Style.space(8) * root.k)
+
+        Button {
+          iconText: String.fromCodePoint(0xF004D)
+          iconSize: Math.round(Style.font.icon * root.k)
+          tooltipText: "Back"
+          onClicked: root.closeRequested()
+        }
+
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          text: "Stats"
+          color: Commons.Color.accent
+          font.family: Style.font.family
+          font.bold: true
+          font.pixelSize: Math.round(Style.font.display * root.k)
+        }
       }
 
-      Text {
+      // This board size or everything, as two segments.
+      Row {
+        id: scopeSwitch
+        anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        text: "Stats"
-        color: Commons.Color.accent
-        font.family: Style.font.family
-        font.bold: true
-        font.pixelSize: Math.round(Style.font.display * root.k)
+        spacing: Math.round(Style.space(2) * root.k)
+
+        Repeater {
+          model: [{ id: "size", label: root.size + "×" + root.size }, { id: "all", label: "All" }]
+          delegate: Rectangle {
+            id: seg
+            required property var modelData
+            readonly property bool on: root.scope === modelData.id
+            implicitWidth: segText.implicitWidth + Math.round(Style.space(14) * root.k)
+            implicitHeight: segText.implicitHeight + Math.round(Style.space(8) * root.k)
+            radius: Style.cornerRadius
+            color: on ? Util.alpha(Commons.Color.accent, 0.22)
+              : segArea.containsMouse ? Util.alpha(Commons.Color.foreground, 0.1) : "transparent"
+
+            Text {
+              id: segText
+              anchors.centerIn: parent
+              text: seg.modelData.label
+              color: seg.on ? Commons.Color.accent : Commons.Color.muted
+              font.family: Style.font.family
+              font.bold: seg.on
+              font.pixelSize: Math.round(Style.font.body * root.k)
+            }
+
+            MouseArea {
+              id: segArea
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.scope = seg.modelData.id
+            }
+          }
+        }
       }
     }
 
