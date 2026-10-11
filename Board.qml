@@ -60,8 +60,8 @@ Item {
   // "restore" to fade the tiles in (used by undo).
   function rebuild(list, kind) {
     dyingTimer.stop()
-    bumpAnim.stop()
-    bump = 0
+    thumpAnim.stop()
+    thumpScale = 1
     tilesModel.clear()
     for (var i = 0; i < list.length; i++) {
       var t = list[i]
@@ -98,6 +98,13 @@ Item {
       tilesModel.append({ tid: g.id, value: g.value, col: g.x, row: g.y, kind: "merge", dying: false, fx: fx })
     }
 
+    // Big merges make the whole board thump as the tile lands.
+    var thump = 0
+    for (i = 0; i < res.merges.length; i++) {
+      if (res.merges[i].value >= 128) thump = Math.max(thump, res.merges[i].newMax ? 0.03 : 0.015)
+    }
+    if (thump > 0) thumpBoard(thump)
+
     if (res.spawned) {
       var s = res.spawned
       tilesModel.append({ tid: s.id, value: s.value, col: s.x, row: s.y, kind: "spawn", dying: false, fx: 0 })
@@ -107,24 +114,36 @@ Item {
   }
 
   // A move that did nothing: nudge the tiles toward `dir` and let them spring
-  // back, like pushing against a wall.
-  property real bump: 0
-  property real bumpDx: 0
-  property real bumpDy: 0
-
+  // back, like pushing against a wall. The ones at the wall go first.
   function bumpToward(dir) {
     if (speed <= 0 || Style.duration(1) === 0) return
     var d = Math.max(3, Math.round(cell * 0.12))
-    bumpDx = dir === 1 ? d : dir === 3 ? -d : 0
-    bumpDy = dir === 2 ? d : dir === 0 ? -d : 0
-    bumpAnim.restart()
+    var dx = dir === 1 ? d : dir === 3 ? -d : 0
+    var dy = dir === 2 ? d : dir === 0 ? -d : 0
+    for (var i = 0; i < tilesModel.count; i++) {
+      var item = tileRepeater.itemAt(i)
+      if (!item) continue
+      var rank = dir === 1 ? size - 1 - item.col : dir === 3 ? item.col
+        : dir === 2 ? size - 1 - item.row : item.row
+      item.nudgeToward(dx, dy, Math.round(rank * 28 * speed))
+    }
   }
 
+  property real thumpScale: 1
+
+  function thumpBoard(amount) {
+    if (speed <= 0 || Style.duration(1) === 0) return
+    thumpTo = 1 + amount
+    thumpAnim.restart()
+  }
+
+  property real thumpTo: 1.015
+
   SequentialAnimation {
-    id: bumpAnim
-    NumberAnimation { target: root; property: "bump"; to: 1; duration: 55 * root.speed; easing.type: Easing.OutQuad }
-    NumberAnimation { target: root; property: "bump"; to: -0.3; duration: 90 * root.speed; easing.type: Easing.InOutQuad }
-    NumberAnimation { target: root; property: "bump"; to: 0; duration: 90 * root.speed; easing.type: Easing.InOutQuad }
+    id: thumpAnim
+    PauseAnimation { duration: root.slideMs }
+    NumberAnimation { target: root; property: "thumpScale"; to: root.thumpTo; duration: 70 * root.speed; easing.type: Easing.OutQuad }
+    NumberAnimation { target: root; property: "thumpScale"; to: 1; duration: 200 * root.speed; easing.type: Easing.OutBack }
   }
 
   // Enter/Space: whatever the overlay's main button is.
@@ -165,10 +184,10 @@ Item {
   Item {
     width: parent.width
     height: parent.height
-    x: root.bump * root.bumpDx
-    y: root.bump * root.bumpDy
+    scale: root.thumpScale
 
     Repeater {
+      id: tileRepeater
       model: tilesModel
       delegate: Tile {
         palette: root.palette
@@ -243,6 +262,10 @@ Item {
 
     Column {
       anchors.centerIn: parent
+      scale: root.overlayOn ? 1 : 0.85
+      Behavior on scale {
+        NumberAnimation { duration: Style.duration(Math.round(350 * root.speed)); easing.type: Easing.OutBack }
+      }
       spacing: Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
 
       Text {
@@ -285,6 +308,8 @@ Item {
     implicitWidth: btnText.implicitWidth + Math.round(Style.space(24) * k)
     implicitHeight: btnText.implicitHeight + Math.round(Style.space(12) * k)
     radius: Style.cornerRadius
+    scale: area.pressed ? 0.95 : area.containsMouse ? 1.04 : 1
+    Behavior on scale { NumberAnimation { duration: Style.duration(90); easing.type: Easing.OutQuad } }
     color: primary
       ? Util.alpha(Commons.Color.accent, area.containsMouse ? 0.9 : 0.75)
       : Util.alpha(Commons.Color.foreground, area.containsMouse ? 0.18 : 0.1)

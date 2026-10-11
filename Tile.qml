@@ -31,6 +31,46 @@ Item {
   height: cell
   z: dying ? 0 : (kind === "merge" ? 2 : 1)
 
+  // Squash and stretch: how far the tile still has to go, so it is longest at the
+  // start of a slide and relaxes as it lands. Derived from the position the
+  // Behaviors below are animating, so it costs no animation object of its own.
+  readonly property real remainX: Math.abs(x - (gap + col * (cell + gap)))
+  readonly property real remainY: Math.abs(y - (gap + row * (cell + gap)))
+  readonly property real stretch: Math.min(1, Math.max(remainX, remainY) / (cell + gap))
+  readonly property bool stretchH: remainX >= remainY
+
+  // A blocked move: 0 rests, 1 is the full nudge toward (nudgeDx, nudgeDy).
+  property real nudge: 0
+  property real nudgeDx: 0
+  property real nudgeDy: 0
+  property var nudgeAnim: null
+
+  transform: Translate { x: root.nudge * root.nudgeDx; y: root.nudge * root.nudgeDy }
+
+  // Called by Board for a move that did nothing. Tiles nearest the wall react
+  // first, so the nudge travels back across the board.
+  function nudgeToward(dx, dy, delay) {
+    nudgeDx = dx
+    nudgeDy = dy
+    if (!nudgeAnim) nudgeAnim = nudgeComp.createObject(root)
+    nudgeAnim.delay = delay
+    nudgeAnim.restart()
+  }
+
+  // Animations are made when a tile needs them and destroy themselves when they
+  // stop. A tile is created on most moves and most never use most of these, so
+  // building all of them up front was a measurable share of a move's cost.
+  Component {
+    id: nudgeComp
+    SequentialAnimation {
+      property alias delay: nudgeDelay.duration
+      PauseAnimation { id: nudgeDelay }
+      NumberAnimation { target: root; property: "nudge"; to: 1; duration: root.popMs * 0.275; easing.type: Easing.OutQuad }
+      NumberAnimation { target: root; property: "nudge"; to: -0.3; duration: root.popMs * 0.45; easing.type: Easing.InOutQuad }
+      NumberAnimation { target: root; property: "nudge"; to: 0; duration: root.popMs * 0.45; easing.type: Easing.InOutQuad }
+    }
+  }
+
   Behavior on x { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
   Behavior on y { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
 
@@ -103,30 +143,6 @@ Item {
 
   // ---- visuals --------------------------------------------------------------
 
-  // Expanding rings for a big merge. Drawn behind the face, so they read as a
-  // pulse leaving the tile.
-  Rectangle {
-    id: ringA
-    anchors.fill: parent
-    radius: Style.cornerRadius
-    color: "transparent"
-    border.width: Math.max(2, Math.round(root.cell * 0.045))
-    border.color: root.fillColor
-    opacity: 0
-    transformOrigin: Item.Center
-  }
-
-  Rectangle {
-    id: ringB
-    anchors.fill: parent
-    radius: Style.cornerRadius
-    color: "transparent"
-    border.width: Math.max(2, Math.round(root.cell * 0.035))
-    border.color: root.fillColor
-    opacity: 0
-    transformOrigin: Item.Center
-  }
-
   Rectangle {
     id: face
     anchors.fill: parent
@@ -135,6 +151,12 @@ Item {
     border.width: root.outlined ? Math.max(1, Math.round(root.cell * 0.04)) : 0
     border.color: root.outlineColor
     transformOrigin: Item.Center
+    transform: Scale {
+      origin.x: face.width / 2
+      origin.y: face.height / 2
+      xScale: 1 + (root.stretchH ? 0.12 : -0.06) * root.stretch
+      yScale: 1 + (root.stretchH ? -0.06 : 0.12) * root.stretch
+    }
     scale: root.kind === "spawn" || root.kind === "merge" ? 0 : 1
     opacity: 1
 
@@ -153,74 +175,130 @@ Item {
   }
 
   // New tile: wait for the slide to land, then scale in.
-  SequentialAnimation {
-    id: spawnAnim
-    PauseAnimation { duration: root.slideMs }
-    NumberAnimation {
-      target: face; property: "scale"; from: 0; to: 1
-      duration: root.spawnMs; easing.type: Easing.OutBack
+  Component {
+    id: spawnComp
+    SequentialAnimation {
+      running: true
+      onStopped: destroy()
+      PauseAnimation { duration: root.slideMs }
+      NumberAnimation {
+        target: face; property: "scale"; from: 0; to: 1
+        duration: root.spawnMs; easing.type: Easing.OutBack
+      }
     }
   }
 
   // Merge result: wait for the slide, overshoot to 1.2, settle at 1.
-  SequentialAnimation {
-    id: popAnim
-    PauseAnimation { duration: root.slideMs }
-    NumberAnimation {
-      target: face; property: "scale"; from: 0; to: 1.2
-      duration: root.popMs * 0.5; easing.type: Easing.OutQuad
-    }
-    NumberAnimation {
-      target: face; property: "scale"; to: 1
-      duration: root.popMs * 0.5; easing.type: Easing.InOutQuad
-    }
-  }
-
-  SequentialAnimation {
-    id: ringAnimA
-    PauseAnimation { duration: root.slideMs + root.popMs * 0.3 }
-    ParallelAnimation {
-      NumberAnimation { target: ringA; property: "scale"; from: 1; to: 1.7; duration: root.popMs * 2.4; easing.type: Easing.OutCubic }
-      NumberAnimation { target: ringA; property: "opacity"; from: 0.9; to: 0; duration: root.popMs * 2.4; easing.type: Easing.OutCubic }
+  Component {
+    id: popComp
+    SequentialAnimation {
+      running: true
+      onStopped: destroy()
+      PauseAnimation { duration: root.slideMs }
+      NumberAnimation {
+        target: face; property: "scale"; from: 0; to: 1.2
+        duration: root.popMs * 0.5; easing.type: Easing.OutQuad
+      }
+      NumberAnimation {
+        target: face; property: "scale"; to: 1
+        duration: root.popMs * 0.5; easing.type: Easing.InOutQuad
+      }
     }
   }
 
-  SequentialAnimation {
-    id: ringAnimB
-    PauseAnimation { duration: root.slideMs + root.popMs * 0.9 }
-    ParallelAnimation {
-      NumberAnimation { target: ringB; property: "scale"; from: 1; to: 2.2; duration: root.popMs * 2.6; easing.type: Easing.OutCubic }
-      NumberAnimation { target: ringB; property: "opacity"; from: 0.7; to: 0; duration: root.popMs * 2.6; easing.type: Easing.OutCubic }
+  // A white flash as the merged tile pops, fading as it settles.
+  Component {
+    id: flashComp
+    Rectangle {
+      id: flash
+      anchors.fill: parent
+      radius: face.radius
+      color: "white"
+      opacity: 0
+      SequentialAnimation {
+        running: true
+        onStopped: flash.destroy()
+        PauseAnimation { duration: root.slideMs }
+        NumberAnimation { target: flash; property: "opacity"; from: 0.4; to: 0; duration: root.popMs * 1.2; easing.type: Easing.OutQuad }
+      }
+    }
+  }
+
+  // An expanding ring for a big merge, drawn behind the face so it reads as a
+  // pulse leaving the tile.
+  Component {
+    id: ringComp
+    Rectangle {
+      id: ring
+      property real delayMs: 0
+      property real grow: 1.7
+      property real startOpacity: 0.9
+      property real thickness: 0.045
+      property real lifeMs: 480
+      z: -1
+      anchors.fill: parent
+      radius: Style.cornerRadius
+      color: "transparent"
+      border.width: Math.max(2, Math.round(root.cell * thickness))
+      border.color: root.fillColor
+      opacity: 0
+      transformOrigin: Item.Center
+      SequentialAnimation {
+        running: true
+        onStopped: ring.destroy()
+        PauseAnimation { duration: ring.delayMs }
+        ParallelAnimation {
+          NumberAnimation { target: ring; property: "scale"; from: 1; to: ring.grow; duration: ring.lifeMs; easing.type: Easing.OutCubic }
+          NumberAnimation { target: ring; property: "opacity"; from: ring.startOpacity; to: 0; duration: ring.lifeMs; easing.type: Easing.OutCubic }
+        }
+      }
     }
   }
 
   // Merge source: slide into the target cell, then fade away under the pop.
-  SequentialAnimation {
-    id: dyingAnim
-    PauseAnimation { duration: root.slideMs * 0.8 }
-    NumberAnimation {
-      target: face; property: "opacity"; to: 0
-      duration: root.popMs * 0.6; easing.type: Easing.OutQuad
+  Component {
+    id: dyingComp
+    SequentialAnimation {
+      running: true
+      onStopped: destroy()
+      PauseAnimation { duration: root.slideMs * 0.8 }
+      NumberAnimation {
+        target: face; property: "opacity"; to: 0
+        duration: root.popMs * 0.6; easing.type: Easing.OutQuad
+      }
     }
   }
 
-  // Tile put back by undo: a quick fade so the board does not just snap.
-  NumberAnimation {
-    id: restoreAnim
-    target: face; property: "opacity"; from: 0.25; to: 1
-    duration: root.popMs * 0.8; easing.type: Easing.OutQuad
+  // Tile put back by undo: a quick fade and scale-up so the board does not just snap.
+  Component {
+    id: restoreComp
+    ParallelAnimation {
+      running: true
+      onStopped: destroy()
+      NumberAnimation {
+        target: face; property: "opacity"; from: 0.25; to: 1
+        duration: root.popMs * 0.8; easing.type: Easing.OutQuad
+      }
+      NumberAnimation {
+        target: face; property: "scale"; from: 0.85; to: 1
+        duration: root.popMs * 0.8; easing.type: Easing.OutBack
+      }
+    }
   }
 
-  onDyingChanged: if (dying) dyingAnim.start()
+  onDyingChanged: if (dying) dyingComp.createObject(root)
 
   Component.onCompleted: {
-    if (kind === "spawn") spawnAnim.start()
+    if (kind === "spawn") spawnComp.createObject(root)
     else if (kind === "merge") {
-      popAnim.start()
-      if (fx > 0 && popMs > 0) {
-        ringAnimA.start()
-        if (fx > 1) ringAnimB.start()
+      popComp.createObject(root)
+      if (popMs > 0) {
+        flashComp.createObject(face)
+        if (fx > 0) ringComp.createObject(root, { delayMs: slideMs + popMs * 0.3, lifeMs: popMs * 2.4 })
+        if (fx > 1) ringComp.createObject(root, {
+          delayMs: slideMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
+        })
       }
-    } else if (kind === "restore") restoreAnim.start()
+    } else if (kind === "restore") restoreComp.createObject(root)
   }
 }

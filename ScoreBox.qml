@@ -23,6 +23,12 @@ Rectangle {
     pulse.restart()
   }
 
+  // A bigger pulse and a flash of the accent color, for a new best score.
+  function celebrate() {
+    if (speed <= 0 || Style.duration(1) === 0) return
+    celebrateAnim.restart()
+  }
+
   // Padding of about 3 px above and below and 5 px either side, so the text sits
   // evenly in the card instead of being tight vertically and roomy sideways.
   implicitWidth: Math.max(Math.round(Style.space(48) * k), label.implicitWidth + Math.round(Style.space(10) * k))
@@ -47,11 +53,25 @@ Rectangle {
       id: number
       anchors.horizontalCenter: parent.horizontalCenter
       text: Number(box.value).toLocaleString(Qt.locale(), "f", 0)
-      color: Commons.Color.foreground
+      property real hot: 0
+      color: Qt.tint(Commons.Color.foreground, Util.alpha(Commons.Color.accent, hot))
       font.family: Style.font.family
       font.bold: true
       font.pixelSize: Math.round((Style.font.title - 1) * box.k)
       transformOrigin: Item.Center
+
+      ParallelAnimation {
+        id: celebrateAnim
+        SequentialAnimation {
+          NumberAnimation { target: number; property: "scale"; to: 1.35; duration: Style.duration(110 * box.speed); easing.type: Easing.OutQuad }
+          NumberAnimation { target: number; property: "scale"; to: 1.0; duration: Style.duration(320 * box.speed); easing.type: Easing.OutBack }
+        }
+        SequentialAnimation {
+          NumberAnimation { target: number; property: "hot"; to: 1; duration: Style.duration(80 * box.speed) }
+          PauseAnimation { duration: Style.duration(500 * box.speed) }
+          NumberAnimation { target: number; property: "hot"; to: 0; duration: Style.duration(500 * box.speed); easing.type: Easing.InOutQuad }
+        }
+      }
 
       SequentialAnimation {
         id: pulse

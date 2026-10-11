@@ -107,7 +107,10 @@ Panel {
   readonly property bool statsOpen: page === "stats"
   readonly property bool settingsOpen: page === "settings"
 
-  function togglePage(name) { page = page === name ? "" : name }
+  function togglePage(name) {
+    if (name === "stats") hintStats.press()
+    page = page === name ? "" : name
+  }
   property bool loaded: false
 
   // Saved data, by board size. Rewritten whole on every save.
@@ -142,15 +145,20 @@ Panel {
     stats = Stats.clean(stats)
   }
 
+  property bool bestBeaten: false
+  property real lastBlockedMs: 0
+
   function startGame() {
+    bestBeaten = false
     game = Game.newGame(boardSize)
     score = 0
     setHistory([])
-    board.rebuild(Game.tiles(game))
+    board.rebuild(Game.tiles(game), "spawn")
     updateEnd()
   }
 
   function newGame() {
+    hintNew.press()
     startGame()
     save()
   }
@@ -165,10 +173,16 @@ Panel {
   // dir: 0 up, 1 right, 2 down, 3 left
   function doMove(dir) {
     if (!game || page !== "") return
+    hintMove.press()
     var before = Game.serialize(game)
     var res = Game.move(game, dir)
     if (!res.moved) {
-      if (!Game.isTerminated(game)) board.bumpToward(dir)
+      if (!Game.isTerminated(game)) {
+        board.bumpToward(dir)
+        var now = Date.now()
+        if (now - lastBlockedMs > 150) sound.play("merge0", -500, 0.5)
+        lastBlockedMs = now
+      }
       return
     }
 
@@ -179,7 +193,16 @@ Panel {
 
     board.applyMove(res)
     score = game.score
-    if (score > best) best = score
+    if (score > best) {
+      // Beating a standing best is worth a moment, once per game. The first game
+      // on a board size has no best to beat.
+      if (!bestBeaten && best > 0) {
+        bestBeaten = true
+        scorePill.celebrate()
+        sound.play("merge7", 0)
+      }
+      best = score
+    }
     Stats.recordMove(stats, game, res)
     bumpStats()
     if (res.scoreDelta > 0) scorePill.flash(res.scoreDelta)
@@ -190,6 +213,7 @@ Panel {
 
   function undo() {
     if (!game || page !== "" || history.length === 0) return
+    hintUndo.press()
     var list = history.slice()
     var previous = Game.fromSaved(list.pop())
     if (!previous) return
@@ -224,30 +248,6 @@ Panel {
     if (game.over) delete nextGames[key]
     else nextGames[key] = Game.serialize(game)
     savedGames = nextGames
-    stateFile.setText(JSON.stringify({ version: 2, bests: bests, games: savedGames, stats: stats }) + "\n")
-  }
-
-  function sameAsSaved() {
-    if (!game || game.size !== boardSize) return false
-    var saved = savedGames[String(boardSize)]
-    if (game.over) return !saved
-    return !!saved && JSON.stringify(Game.serialize(game)) === JSON.stringify(saved)
-  }
-
-  // Show the saved game for the current board size, or start one.
-  function loadSize() {
-    var key = String(boardSize)
-    best = Math.max(0, Number(bests[key]) || 0)
-    var saved = savedGames[key] ? Game.fromSaved(savedGames[key]) : null
-    if (saved && saved.size === boardSize) {
-      game = saved
-      score = game.score
-      setHistory([])
-      board.rebuild(Game.tiles(game))
-      updateEnd()
-    } else {
-      startGame()
-    }
     // Writing the file is deferred until play pauses (and at least every 15 s).
     // Each write to the state directory made something else in the shell do a
     // burst of work: measured while playing fast, one write every 300 ms took
@@ -264,7 +264,7 @@ Panel {
     idleTimer.stop()
     waitTimer.stop()
     dirty = false
-    if (score > best) best = score
+    stateFile.setText(JSON.stringify({ version: 2, bests: bests, games: savedGames, stats: stats }) + "\n")
   }
 
   Timer {
@@ -280,6 +280,31 @@ Panel {
   }
 
   Component.onDestruction: if (dirty) root.writeState()
+
+  function sameAsSaved() {
+    if (!game || game.size !== boardSize) return false
+    var saved = savedGames[String(boardSize)]
+    if (game.over) return !saved
+    return !!saved && JSON.stringify(Game.serialize(game)) === JSON.stringify(saved)
+  }
+
+  // Show the saved game for the current board size, or start one.
+  function loadSize() {
+    var key = String(boardSize)
+    best = Math.max(0, Number(bests[key]) || 0)
+    var saved = savedGames[key] ? Game.fromSaved(savedGames[key]) : null
+    bestBeaten = false
+    if (saved && saved.size === boardSize) {
+      game = saved
+      score = game.score
+      setHistory([])
+      board.rebuild(Game.tiles(game))
+      updateEnd()
+    } else {
+      startGame()
+    }
+    if (score > best) best = score
+  }
 
   function restore(raw) {
     var data = null
@@ -651,10 +676,10 @@ Panel {
           anchors.horizontalCenter: parent.horizontalCenter
           spacing: root.px(8)
 
-          KeyHint { key: "\u2191\u2193\u2190\u2192"; label: "move"; uiScale: root.uiScale }
-          KeyHint { key: "U"; label: "undo"; uiScale: root.uiScale }
-          KeyHint { key: "R"; label: "new"; uiScale: root.uiScale }
-          KeyHint { key: "T"; label: "stats"; uiScale: root.uiScale }
+          KeyHint { id: hintMove; key: "\u2191\u2193\u2190\u2192"; label: "move"; uiScale: root.uiScale; speed: root.animSpeed }
+          KeyHint { id: hintUndo; key: "U"; label: "undo"; uiScale: root.uiScale; speed: root.animSpeed }
+          KeyHint { id: hintNew; key: "R"; label: "new"; uiScale: root.uiScale; speed: root.animSpeed }
+          KeyHint { id: hintStats; key: "T"; label: "stats"; uiScale: root.uiScale; speed: root.animSpeed }
         }
       }
     }

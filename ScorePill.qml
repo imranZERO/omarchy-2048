@@ -22,6 +22,9 @@ Rectangle {
   // A scoring move: float the points up from the score and pulse it.
   function flash(delta) { scoreCell.flash(delta) }
 
+  // A new best score: pulse the best number.
+  function celebrate() { bestCell.celebrate() }
+
   implicitWidth: cells.implicitWidth
   implicitHeight: cells.implicitHeight
   radius: Style.cornerRadius
@@ -56,6 +59,7 @@ Rectangle {
     }
 
     ScoreBox {
+      id: bestCell
       plain: true
       title: "BEST"
       value: root.best

@@ -11,8 +11,9 @@ what keeps the audio output awake while the game is open.
 Usage: mixer.py SOUNDS_DIR
 
 Commands on stdin, one per line:
-  play NAME SPEED   start sounds/NAME.pcm; SPEED 1.0 is normal, 1.02 is about 34
-                    cents sharper (and 2% shorter)
+  play NAME SPEED [GAIN]
+                    start sounds/NAME.pcm; SPEED 1.0 is normal, 1.02 is about 34
+                    cents sharper (and 2% shorter); GAIN 0.0 to 1.0 is optional
   volume V          0.0 to 1.0
 
 It exits when stdin closes or on SIGTERM. Stdlib only.
@@ -75,6 +76,7 @@ def reader(sounds, commands):
     rounded to 10-cent steps, which nobody can hear and which keeps the number of
     variants small, so after a short while a play costs nothing to prepare."""
     variants = {}
+    volume = 0.6
     for line in sys.stdin:
         parts = line.split()
         if not parts:
@@ -83,12 +85,20 @@ def reader(sounds, commands):
             if parts[0] == "play" and len(parts) >= 3 and parts[1] in sounds:
                 speed = max(0.5, min(2.0, float(parts[2])))
                 step = round(1200 * math.log2(speed) / 10)
-                key = (parts[1], step)
+                gain = round(max(0.0, min(1.0, float(parts[3]))) * 20) if len(parts) > 3 else 20
+                key = (parts[1], step, gain)
                 if key not in variants:
-                    variants[key] = resample(sounds[parts[1]], 2 ** (step * 10 / 1200))
+                    made = resample(sounds[parts[1]], 2 ** (step * 10 / 1200))
+                    scale = volume * gain / 20
+                    if abs(scale - 1) > 1e-3:
+                        made = array.array("h", [int(x * scale) for x in made])
+                    variants[key] = made
                 commands.put(("play", variants[key]))
             elif parts[0] == "volume" and len(parts) >= 2:
-                commands.put(("volume", max(0.0, min(1.0, float(parts[1])))))
+                # Volume is baked into the cached variants, so the mixing loop never
+                # has to scale; a change just drops the cache.
+                volume = max(0.0, min(1.0, float(parts[1])))
+                variants.clear()
         except ValueError:
             pass
     commands.put(("quit", None))
@@ -113,7 +123,6 @@ def main():
     fd = out.fileno()
 
     voices = []          # [samples, position]
-    volume = 0.6
     try:
         while True:
             try:
@@ -122,8 +131,6 @@ def main():
                     if kind == "play":
                         voices.append([value, 0])
                         del voices[:-MAX_VOICES]
-                    elif kind == "volume":
-                        volume = value
                     else:
                         return
             except queue.Empty:
@@ -155,8 +162,9 @@ def main():
                 if voice[1] < len(samples):
                     alive.append(voice)
             voices = alive
-            mixed = array.array("h", [max(-32768, min(32767, int(x * volume))) for x in acc])
-            out.write(mixed.tobytes())
+            if max(acc) > 32767 or min(acc) < -32768:
+                acc = [max(-32768, min(32767, x)) for x in acc]
+            out.write(array.array("h", acc).tobytes())
             out.flush()
     except (BrokenPipeError, KeyboardInterrupt):
         pass

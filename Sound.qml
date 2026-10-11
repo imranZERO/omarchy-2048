@@ -71,11 +71,12 @@ QtObject {
   readonly property real wobbleCents: 40
   property real lastCents: 0
 
-  // `cents` shifts the pitch (and, a little, the length) of this one play.
-  function play(name, cents) {
+  // `cents` shifts the pitch (and, a little, the length) of this one play;
+  // `gain` (0 to 1, default 1) makes it quieter.
+  function play(name, cents, gain) {
     if (!enabled || volume <= 0) return
     hold()
-    send("play " + name + " " + Math.pow(2, (cents || 0) / 1200))
+    send("play " + name + " " + Math.pow(2, (cents || 0) / 1200) + " " + (gain === undefined ? 1 : gain))
   }
 
   // A random shift, always at least 15 cents from the last one, so two merges
