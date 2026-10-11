@@ -588,15 +588,15 @@ Panel {
           anchors.verticalCenter: parent.verticalCenter
           spacing: root.px(10)
 
-          // The title, outlined in the accent color.
+          // The title, with a muted accent outline.
           Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: titleText.implicitWidth + root.px(16)
             height: titleText.implicitHeight + root.px(4)
             radius: Style.cornerRadius
             color: "transparent"
-            border.width: Math.max(2, root.px(2))
-            border.color: Commons.Color.accent
+            border.width: Math.max(1, root.px(1))
+            border.color: Util.alpha(Commons.Color.accent, 0.4)
 
             Text {
               id: titleText
