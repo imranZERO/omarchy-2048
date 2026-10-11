@@ -132,7 +132,15 @@ Panel {
 
   function updateEnd() {
     if (!game) { board.endState = ""; return }
-    board.endState = game.over ? "over" : (Game.isTerminated(game) ? "won" : "")
+    var state = game.over ? "over" : (Game.isTerminated(game) ? "won" : "")
+    // The overlay's numbers are only worth setting while it is up.
+    if (state !== "") {
+      board.endScore = game.score
+      board.endMoves = game.moves
+      board.endTile = Game.maxTile(game)
+      board.endBest = game.score > 0 && game.score >= best
+    }
+    board.endState = state
   }
 
   function setHistory(list) {

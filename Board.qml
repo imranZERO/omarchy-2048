@@ -334,6 +334,32 @@ Item {
   property string shownState: ""
   property bool overlayOn: false
 
+  // What the overlay reports; Panel sets these when a game ends or is won.
+  property int endScore: 0
+  property int endMoves: 0
+  property int endTile: 0
+  property bool endBest: false
+  // The score counting up to endScore while the overlay opens.
+  property real shownScore: 0
+
+  function num(n) { return Number(n).toLocaleString(Qt.locale(), "f", 0) }
+
+  onOverlayOnChanged: {
+    if (!overlayOn) return
+    if (speed <= 0 || Style.duration(1) === 0) { shownScore = endScore; return }
+    countAnim.restart()
+  }
+
+  NumberAnimation {
+    id: countAnim
+    target: root
+    property: "shownScore"
+    from: 0
+    to: root.endScore
+    duration: 750 * root.speed
+    easing.type: Easing.OutCubic
+  }
+
   onEndStateChanged: {
     if (endState === "") {
       overlayTimer.stop()
@@ -354,7 +380,7 @@ Item {
     id: overlay
     anchors.fill: parent
     radius: Style.cornerRadius
-    color: Util.alpha(Commons.Color.popups.background, 0.78)
+    color: Util.alpha(Commons.Color.popups.background, 0.94)
     opacity: root.overlayOn ? 1 : 0
     visible: opacity > 0
 
@@ -380,10 +406,79 @@ Item {
       Text {
         anchors.horizontalCenter: parent.horizontalCenter
         text: root.shownState === "won" ? "You win!" : "Game over!"
-        color: Commons.Color.foreground
+        color: Commons.Color.muted
         font.family: Style.font.family
         font.bold: true
-        font.pixelSize: Math.round(Style.font.display * Math.max(0.6, root.uiScale))
+        font.letterSpacing: 1
+        font.capitalization: Font.AllUppercase
+        font.pixelSize: Math.round(Style.font.body * Math.max(0.6, root.uiScale))
+      }
+
+      // The score, counting up, and what it took.
+      Column {
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Math.round(Style.space(2) * Math.max(0.6, root.uiScale))
+
+        Text {
+          anchors.horizontalCenter: parent.horizontalCenter
+          text: root.num(Math.round(root.shownScore))
+          color: Commons.Color.accent
+          font.family: Style.font.family
+          font.bold: true
+          font.pixelSize: Math.round(Style.font.display * 1.7 * Math.max(0.6, root.uiScale))
+        }
+
+        Text {
+          anchors.horizontalCenter: parent.horizontalCenter
+          text: "points in " + root.num(root.endMoves) + (root.endMoves === 1 ? " move" : " moves")
+          color: Commons.Color.foreground
+          font.family: Style.font.family
+          font.pixelSize: Math.round(Style.font.body * Math.max(0.6, root.uiScale))
+        }
+      }
+
+      Row {
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+
+        Rectangle {
+          visible: root.endTile > 0
+          implicitWidth: tileChip.implicitWidth + Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
+          implicitHeight: tileChip.implicitHeight + Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+          width: implicitWidth
+          height: implicitHeight
+          radius: height / 2
+          color: Util.alpha(Commons.Color.foreground, 0.1)
+
+          Text {
+            id: tileChip
+            anchors.centerIn: parent
+            text: "Best tile " + root.endTile
+            color: Commons.Color.foreground
+            font.family: Style.font.family
+            font.pixelSize: Math.round(Style.font.caption * Math.max(0.6, root.uiScale))
+          }
+        }
+
+        Rectangle {
+          visible: root.endBest
+          implicitWidth: bestChip.implicitWidth + Math.round(Style.space(14) * Math.max(0.6, root.uiScale))
+          implicitHeight: bestChip.implicitHeight + Math.round(Style.space(6) * Math.max(0.6, root.uiScale))
+          width: implicitWidth
+          height: implicitHeight
+          radius: height / 2
+          color: Commons.Color.accent
+
+          Text {
+            id: bestChip
+            anchors.centerIn: parent
+            text: "New best!"
+            color: Commons.Color.background
+            font.family: Style.font.family
+            font.bold: true
+            font.pixelSize: Math.round(Style.font.caption * Math.max(0.6, root.uiScale))
+          }
+        }
       }
 
       Row {
