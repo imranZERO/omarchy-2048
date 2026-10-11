@@ -2,6 +2,8 @@
 
 **Play 2048 in your Omarchy shell.**
 
+![The 2048 plugin: the game in front, its settings page behind](preview.jpg)
+
 An [Omarchy](https://omarchy.org) bar-widget plugin, one click away in your bar. It
 opens as a dropdown under the bar icon or as a floating Hyprland window, with smooth
 animations, undo, stats, board sizes from 3×3 to 6×6, and colors taken from your
@@ -52,14 +54,10 @@ this one does.
 
 ## Requirements
 
-- **Omarchy 4** (the Quickshell-based shell). Tested on Omarchy 4.0.0 with Quickshell
-  0.3.2.
-- **A Nerd Font**, for the icons. Omarchy ships one.
-- **Hyprland**, only for window mode. The widget floats its window with a runtime rule
-  made through `hyprctl eval` (the Lua config interface), tested on Hyprland 0.56.2.
-  Without Hyprland the window still opens, but nothing floats it.
-- **PipeWire** and **Python 3**, only for sound. A small Python script mixes the sounds
-  and plays them through `pw-cat`, which ships with PipeWire.
+- **Omarchy 4** (the Quickshell-based shell). Tested on Omarchy 4.0.0, which ships
+  Quickshell 0.3.2 and Hyprland 0.56.2.
+- **Python 3**, only for sound. A small script mixes the sounds and plays them through
+  `pw-cat`, from the PipeWire that Omarchy already uses.
 
 ## Using it
 
@@ -81,8 +79,8 @@ Either click closes it again.
 
 The header row has the title and three icon buttons on the left (undo, new game and
 settings; hover for a tooltip) and your score and best score on the right. The score
-card is a button too: click it to open the stats. You can also swipe on the board. Reaching the goal tile sends a
-desktop notification.
+card is a button too: click it to open the stats. You can also swipe on the board.
+Reaching the goal tile sends a desktop notification.
 
 ### Commands
 
@@ -132,21 +130,15 @@ omarchy bar set imranzero.2048 scale 120 --json
 ## Window mode
 
 With Open as set to Window, or when you right-click the icon, the game opens as a
-floating Hyprland window, centered on the active workspace. Move it with Super+drag
-like any floating window. The bar icon, `toggle`, Esc and `q` all close it.
-
-Hyprland has to be told to float it. The widget does that itself every time it opens,
-with a runtime rule, so your `hyprland.lua` is not touched. A config reload drops
-runtime rules, which is why it is re-applied on each open. To make the rule permanent
-instead, add this to `hyprland.lua`:
-
-```lua
-o.window({ class = "org.quickshell", title = "^2048$" }, { float = true, center = true })
-```
+floating window, centered on the active workspace. Move it with Super+drag like any
+floating window. The bar icon, `toggle`, Esc and `q` all close it.
 
 The window is exactly as big as the game, so it cannot be resized by hand; use the
 Window scale setting. It grows while the Settings page is open and shrinks back after.
 Tab (switch to the next bar panel) does nothing in this mode.
+
+The widget makes the window float itself, with no change to your Hyprland config (see
+[What it runs and touches](#what-it-runs-and-touches)).
 
 ## Undo and stats
 
@@ -154,13 +146,14 @@ Undo steps back through the last 50 moves of the current game. The history lasts
 the shell runs and is not saved across restarts.
 
 The stats page shows games, wins, moves, best tile, and the best score for the current
-board size. A game counts from its first move; undoing that move takes it back.
+board size. Open it by clicking the score card, with `t`, or with the `stats` command.
+A game counts from its first move; undoing that move takes it back.
 
 ## Sound
 
-On by default; turn it off in Settings. One profile: a pitch-dropping "bloop" over a thump, with a short bright
-tick on the attack. Merges climb a pentatonic scale from C2, so bigger tiles ring higher
-and hit a little harder.
+On by default; turn it off in Settings. One profile: a pitch-dropping "bloop" over a
+thump, with a short bright tick on the attack. Merges climb a pentatonic scale from C2,
+so bigger tiles ring higher and hit a little harder.
 
 - Every sound is matched to the same A-weighted loudness, so a small merge and a big one
   sound equally loud.
@@ -176,9 +169,10 @@ and hit a little harder.
 open and mixes every sound into it. The obvious design, starting a `pw-cat` for each
 sound, made PipeWire's session manager (WirePlumber) use about a quarter of a CPU core at
 a fast pace, because every sound is a new stream to set up and tear down, and that churn
-also slowed the shell's own audio widgets. With the mixer it is under 1%. The mixer makes
-the pitch variations itself, caches them, and keeps its buffer small enough that sounds
-start as fast as they did before.
+also slowed the shell's own audio widgets. With the mixer, WirePlumber's use drops to
+under 1%, and the mixer itself takes a few percent of a core only while sounds are
+playing. It makes the pitch variations itself, caches them, and keeps its buffer small
+enough that sounds start as fast as they did before.
 
 The sounds are headerless 16-bit mono PCM at 24 kHz, about 280 KB in total. To hear one:
 
@@ -190,7 +184,8 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
 
 - **Runs `omarchy bar set`**, only from the Settings page, to save its own settings.
 - **Runs `hyprctl eval`**, only in window mode, to add a window rule for a window titled
-  "2048". Nothing else about your Hyprland setup is changed.
+  "2048". Nothing else about your Hyprland setup is changed. The rule is added on every
+  open, because a config reload drops runtime rules.
 - **Runs `python3 mixer.py`**, only when sound is on, which in turn runs one `pw-cat`
   to play the mixed sound. Both stop shortly after the popup closes.
 - **Runs `omarchy-notification-send`**, once, when you reach the goal tile.
@@ -207,9 +202,13 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
   `pw-cat` exist. The first sound after a long idle can be clipped only when the mixer is
   not running, for example when a move arrives through `omarchy-shell` while the popup is
   closed.
-- **The window opens tiled:** the float rule did not apply. You are probably not on
-  Hyprland, or its config interface differs; add the permanent rule from
-  [Window mode](#window-mode).
+- **The window opens tiled:** the float rule did not apply. It relies on Hyprland's Lua
+  config interface (`hyprctl eval`), so a Hyprland update that changes that interface
+  can break it. Add a permanent rule to `~/.config/hypr/hyprland.lua` instead:
+
+  ```lua
+  o.window({ class = "org.quickshell", title = "^2048$" }, { float = true, center = true })
+  ```
 - **QML edits do not show up:** run `omarchy restart shell`. The shell caches compiled
   QML by path, and its file watcher does not follow a symlinked plugin folder.
 
@@ -234,7 +233,7 @@ folder, so keep the folder free of them. The symlink above is outside it, which 
 | `Game.js` | The rules, in pure JS with no QML in it |
 | `Stats.js` | Lifetime stats, in pure JS |
 | `StatsView.qml`, `SettingsView.qml`, `ScoreBox.qml` | The stats page, the settings page, the score boxes |
-| `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE | BEST capsule (which opens the stats), and the key caps under the board |
+| `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE and BEST capsule (which opens the stats), and the key caps under the board |
 | `ThemePalette.qml` | Reads the theme's hue palette from `colors.toml` |
 | `Sound.qml`, `mixer.py` | Sends sounds to the mixer, which mixes them into one PipeWire stream and keeps the output awake |
 | `sounds/` | The generated sound files |
