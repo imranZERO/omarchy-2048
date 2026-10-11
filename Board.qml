@@ -20,7 +20,7 @@ Item {
   property var palette: null
 
   // Bigger boards get smaller cells so the window does not balloon.
-  readonly property var cellBase: ({ 3: 80, 4: 64, 5: 54, 6: 46 })
+  readonly property var cellBase: ({ 3: 88, 4: 64, 5: 54, 6: 46 })
   readonly property var gapBase: ({ 3: 10, 4: 10, 5: 8, 6: 8 })
   readonly property int cell: Math.max(16, Math.round(Style.space(cellBase[size] || 64) * uiScale))
   readonly property int gap: Math.max(3, Math.round(Style.space(gapBase[size] || 10) * uiScale))

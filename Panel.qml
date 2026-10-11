@@ -7,7 +7,7 @@ import qs.Ui
 import "Game.js" as Game
 import "Stats.js" as Stats
 
-// 2048 in a bar popup. The bar shows a small 2048 tile icon; clicking it (or
+// 2048 in a bar popup. The bar shows a "2" in a square icon; clicking it (or
 // `omarchy-shell shell summon imranzero.2048`) opens the game under the icon.
 // Rules live in Game.js, tile animation in Tile.qml/Board.qml; this file wires
 // them to the bar, the keyboard, the settings and the saved state.
@@ -346,16 +346,11 @@ Panel {
     id: button
     anchors.fill: parent
     bar: root.bar
+    // A "2" in a square, from the Nerd Font; the bar colors it like its other icons.
+    text: String.fromCodePoint(0xF03A7)
+    // A little larger than the bar's default icon size, which makes this glyph look small.
+    fontSize: Style.bar.iconFont + 3
     active: root.opened
-    iconComponent: Component {
-      Item {
-        TileIcon {
-          anchors.centerIn: parent
-          // The same color the bar gives its font icons, in both states.
-          tint: button.active && button.useActiveColor ? button.activeColor : button.foreground
-        }
-      }
-    }
     tooltipText: root.opened ? "" : "2048  \u00b7  right-click for a window"
     onPressed: function(b) {
       if (root.opened) { root.close(); return }
@@ -377,6 +372,7 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened && !root.floating
+    padding: root.floatPad
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(root.contentW + panel.verticalContentInset)
     contentHeight: panel.fittedContentHeight(column.implicitHeight)
@@ -391,7 +387,9 @@ Panel {
 
   // ---- window mode ----------------------------------------------------------
 
-  readonly property int floatPad: Style.space(14)
+  // The one outer margin: from the edge of the popup or window to the board, the
+  // header and the footer alike, on all four sides.
+  readonly property int floatPad: Style.space(16)
   // Set once Hyprland has been asked to float the window, so it never shows up
   // tiled for a moment first.
   property bool ruleReady: false
@@ -489,19 +487,21 @@ Panel {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.top: parent.top
-      spacing: root.px(6)
+      spacing: root.px(8)
 
       // One compact header row. On the left, the title and the actions as
       // borderless icon buttons; on the right, the scores in a single capsule.
       Item {
-        width: parent.width
+        // The same width as the board, so the title lines up with its left edge and
+        // the score card with its right edge.
+        width: Math.max(board.width, leftRow.implicitWidth + scorePill.implicitWidth + root.px(12))
+        x: Math.round((parent.width - width) / 2)
         height: Math.max(leftRow.implicitHeight, scorePill.implicitHeight)
 
         Row {
           id: leftRow
           anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
-          anchors.leftMargin: root.px(2)
           spacing: root.px(10)
 
           Text {

@@ -64,7 +64,7 @@ Rectangle {
 
   // Tall enough for the rows and buttons, whatever the board size; Panel sizes
   // the board's slot to at least this.
-  implicitHeight: content.implicitHeight + buttons.implicitHeight + Math.round(Style.space(46) * k)
+  implicitHeight: content.implicitHeight + buttons.implicitHeight + Math.round(Style.space(48) * k)
 
   Column {
     id: content
@@ -130,7 +130,7 @@ Rectangle {
     id: buttons
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    anchors.margins: Math.round(Style.space(14) * root.k)
+    anchors.margins: Math.round(Style.space(16) * root.k)
     spacing: Math.round(Style.space(8) * root.k)
 
     Button {

@@ -25,10 +25,14 @@ Rectangle {
   implicitWidth: cells.implicitWidth
   implicitHeight: cells.implicitHeight
   radius: Style.cornerRadius
+  // The theme's hover fill is the same 8% as this card's idle fill, which would make
+  // hovering invisible, so hover is a clearly stronger fill plus the theme's hover border.
   color: area.pressed ? Style.pressedFill
     : active ? Style.selectedFill
-    : area.containsMouse ? Style.hoverFill
+    : area.containsMouse ? Util.alpha(Commons.Color.foreground, 0.14)
     : Util.alpha(Commons.Color.foreground, 0.08)
+  border.width: area.containsMouse ? 1 : 0
+  border.color: Style.hoverBorderColor
 
   Behavior on color { ColorAnimation { duration: Style.duration(120) } }
 

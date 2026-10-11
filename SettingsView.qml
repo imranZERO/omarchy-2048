@@ -60,8 +60,10 @@ Rectangle {
     return list
   }
 
-  // Wide enough for the longest row (label plus four-way picker).
-  implicitWidth: Math.round(Style.space(310) * k)
+  // About as wide as the narrowest board, so this page never makes the column wider
+  // than the board (which would inset the board from the header and footer). The
+  // longest row, a label and a four-way picker, still fits.
+  implicitWidth: Math.round(Style.space(300) * k)
   implicitHeight: content.implicitHeight + Math.round(Style.space(32) * k)
 
   Column {

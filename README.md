@@ -226,7 +226,6 @@ folder, so keep the folder free of them. The symlink above is outside it, which 
 | `Game.js` | The rules, in pure JS with no QML in it |
 | `Stats.js` | Lifetime stats, in pure JS |
 | `StatsView.qml`, `SettingsView.qml`, `ScoreBox.qml` | The stats page, the settings page, the score boxes |
-| `TileIcon.qml` | The bar icon: a small 2048 tile in the bar's icon color |
 | `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE | BEST capsule (which opens the stats), and the key caps under the board |
 | `ThemePalette.qml` | Reads the theme's hue palette from `colors.toml` |
 | `Sound.qml`, `mixer.py` | Sends sounds to the mixer, which mixes them into one PipeWire stream and keeps the output awake |

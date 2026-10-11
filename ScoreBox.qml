@@ -23,8 +23,10 @@ Rectangle {
     pulse.restart()
   }
 
-  implicitWidth: Math.max(Math.round(Style.space(50) * k), label.implicitWidth + Math.round(Style.space(14) * k))
-  implicitHeight: label.implicitHeight + Math.round(Style.space(4) * k)
+  // Padding of about 3 px above and below and 5 px either side, so the text sits
+  // evenly in the card instead of being tight vertically and roomy sideways.
+  implicitWidth: Math.max(Math.round(Style.space(48) * k), label.implicitWidth + Math.round(Style.space(10) * k))
+  implicitHeight: label.implicitHeight + Math.round(Style.space(6) * k)
   radius: Style.cornerRadius
   color: plain ? "transparent" : Util.alpha(Commons.Color.foreground, 0.08)
 
