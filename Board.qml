@@ -535,7 +535,7 @@ Item {
 
       Text {
         anchors.horizontalCenter: parent.horizontalCenter
-        text: root.shownState === "won" ? "You win!" : "Game over"
+        text: root.shownState === "won" ? "You win!" : "Game over!"
         color: Util.alpha(Commons.Color.foreground, 0.8)
         font.family: Style.font.family
         font.bold: true
