@@ -151,7 +151,8 @@ the shell runs and is not saved across restarts.
 The stats page shows games, wins, moves, best tile and the best score, for everything or
 for the current board size (switch at the top right; per-size numbers count from the
 version that added them, so they start at zero for an old save). Open it by clicking the score card, with `t`, or with the `stats` command.
-A game counts from its first move; undoing that move takes it back.
+A game counts from its first move; undoing that move takes it back. Reset stats clears
+the counts and the best scores for every board size; saved games are kept.
 
 ## Sound
 

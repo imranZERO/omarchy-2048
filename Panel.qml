@@ -706,8 +706,14 @@ Panel {
           size: root.boardSize
           uiScale: root.uiScale
           onCloseRequested: root.page = ""
+          // Everything the page shows: the counts and the best scores. The game
+          // in progress keeps its score, which becomes the new best.
           onResetRequested: {
             root.stats = Stats.empty()
+            root.bests = ({})
+            root.best = root.score
+            // Overtaking a best the reset just made is nothing to celebrate.
+            root.bestBeaten = true
             root.save()
           }
         }
