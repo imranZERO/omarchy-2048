@@ -473,7 +473,7 @@ Panel {
     // A little larger than the bar's default icon size, which makes this glyph look small.
     fontSize: Style.bar.iconFont + 3
     active: root.opened
-    tooltipText: root.opened ? "" : "2048  \u00b7  right-click for a window"
+    tooltipText: root.opened ? "" : "2048 \u00b7 right-click for a window"
     onPressed: function(b) {
       if (root.opened) { root.close(); return }
       // Decide the mode before opening, so the right surface is the one shown.
