@@ -84,13 +84,18 @@ Panel {
     var next = Object.assign({}, overrides)
     next[key] = value
     overrides = next
-    Util.execArgv(["omarchy", "bar", "set", moduleName, key, JSON.stringify(value), "--json"])
-    if (key === "soundVolume") {
-      // A volume above 0 overrides the old on/off setting if it was off.
-      if (value > 0 && setting("sound", true) === false) setSetting("sound", true)
-      // Let the change be heard: the bindings above have already caught up.
-      if (value > 0) sound.merge(64)
+    if (key === "soundVolume" && value > 0 && setting("sound", true) === false) {
+      // A volume above 0 also clears the old on/off setting if it was off. One
+      // command after the other: two at once both rewrite shell.json, and one
+      // change could be lost.
+      overrides = Object.assign({}, next, { sound: true })
+      Util.execArgv(["sh", "-c", 'omarchy bar set "$0" sound true --json && omarchy bar set "$0" soundVolume "$1" --json',
+        moduleName, JSON.stringify(value)])
+    } else {
+      Util.execArgv(["omarchy", "bar", "set", moduleName, key, JSON.stringify(value), "--json"])
     }
+    // Let the change be heard: the bindings above have already caught up.
+    if (key === "soundVolume" && value > 0) sound.merge(64)
     overrideExpiry.restart()
   }
 
