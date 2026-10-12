@@ -72,6 +72,7 @@ Item {
     burstAnim.stop()
     burst.running = false
     comboAnim.stop()
+    comboHide.stop()
     comboBadge.opacity = 0
     tilesModel.clear()
     for (var i = 0; i < list.length; i++) {
@@ -172,12 +173,22 @@ Item {
   property int comboTier: 0
 
   function showCombo(n) {
-    if (!animated) return
     var t = 0
     for (var i = 0; i < comboTiers.length; i++) if (n >= comboTiers[i].from) t = i
     comboTier = t
     comboText.text = comboTiers[t].name + " ×" + Numerals.convert(n, numerals)
-    comboAnim.restart()
+    if (animated) { comboAnim.restart(); return }
+    // No motion: the badge just shows for a moment.
+    comboBadge.scale = 1
+    comboBadge.opacity = 1
+    comboGlow.opacity = t >= 2 ? 0.45 : 0
+    comboHide.restart()
+  }
+
+  Timer {
+    id: comboHide
+    interval: 1000
+    onTriggered: comboBadge.opacity = 0
   }
 
   Rectangle {
