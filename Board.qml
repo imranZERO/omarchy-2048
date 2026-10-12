@@ -22,6 +22,8 @@ Item {
   property string numerals: "Western"
   // The theme's hue palette (a ThemePalette), handed to each tile.
   property var palette: null
+  // False while a page covers the board, whose shadow would show around it.
+  property bool shadowShown: true
 
   // Bigger boards get smaller cells so the window does not balloon.
   readonly property var cellBase: ({ 3: 88, 4: 64, 5: 54, 6: 46 })
@@ -196,7 +198,7 @@ Item {
     anchors.horizontalCenter: parent.horizontalCenter
     y: -Math.round(height * 0.55)
     width: comboText.implicitWidth + Math.round(Style.space(14) * root.uiScale)
-    height: comboText.implicitHeight + Math.round(Style.space(6) * root.uiScale)
+    height: Math.round(comboMetrics.height) + Math.round(Style.space(6) * root.uiScale)
     radius: height / 2
     color: root.comboTiers[root.comboTier].color || Commons.Color.accent
     opacity: 0
@@ -215,9 +217,16 @@ Item {
       visible: opacity > 0
     }
 
+    // Sized and placed by the UI font's line, not the text's own height: digits
+    // from a fallback font (Arabic, for one) have a taller line and would make
+    // the badge taller with the text riding high.
+    FontMetrics { id: comboMetrics; font: comboText.font }
+
     Text {
       id: comboText
-      anchors.centerIn: parent
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.baseline: parent.top
+      anchors.baselineOffset: Math.round((parent.height - comboMetrics.height) / 2 + comboMetrics.ascent)
       color: root.comboTiers[root.comboTier].text || Commons.Color.background
       font.family: Style.font.family
       font.bold: true
@@ -311,7 +320,7 @@ Item {
   // see-through, so a filled shadow would show through it), a pixel lower than
   // the board so it reads as light from above.
   Repeater {
-    model: [{ m: 1, w: 1, a: 0.10 }, { m: 3, w: 2, a: 0.04 }]
+    model: root.shadowShown ? [{ m: 1, w: 1, a: 0.10 }, { m: 3, w: 2, a: 0.04 }] : []
     delegate: Rectangle {
       required property var modelData
       anchors.fill: parent
@@ -518,7 +527,7 @@ Item {
 
         Chip {
           visible: root.endTile > 0
-          text: "Best tile " + root.num(root.endTile)
+          text: "Best tile " + Numerals.convert(root.endTile, root.numerals)
         }
 
         Chip {
@@ -555,15 +564,20 @@ Item {
     property bool highlight: false
 
     implicitWidth: chipText.implicitWidth + Math.round(Style.space(14) * root.uiScale)
-    implicitHeight: chipText.implicitHeight + Math.round(Style.space(6) * root.uiScale)
+    implicitHeight: Math.round(chipMetrics.height) + Math.round(Style.space(6) * root.uiScale)
     radius: height / 2
     color: highlight ? Commons.Color.accent : Util.alpha(Commons.Color.foreground, 0.14)
     border.width: highlight ? 0 : 1
     border.color: Util.alpha(Commons.Color.foreground, 0.3)
 
+    // Placed by the UI font's line, as the combo badge is.
+    FontMetrics { id: chipMetrics; font: chipText.font }
+
     Text {
       id: chipText
-      anchors.centerIn: parent
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.baseline: parent.top
+      anchors.baselineOffset: Math.round((parent.height - chipMetrics.height) / 2 + chipMetrics.ascent)
       color: chip.highlight ? Commons.Color.background : Commons.Color.foreground
       font.family: Style.font.family
       font.bold: chip.highlight

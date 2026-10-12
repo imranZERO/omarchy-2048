@@ -687,6 +687,7 @@ Panel {
           numerals: root.numerals
           paletteMode: root.paletteMode
           palette: themePalette
+          shadowShown: root.page === ""
           onSwiped: function(dir) { root.doMove(dir) }
           onNewGameRequested: root.newGame()
           onKeepGoingRequested: root.keepGoing()

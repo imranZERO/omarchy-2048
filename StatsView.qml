@@ -64,7 +64,9 @@ Rectangle {
       }
       return [
         { label: "Games played", value: num(c.games) },
-        { label: "Games won", value: num(c.wins) + (c.games > 0 ? "  (" + num(Stats.winRate(c)) + "%)" : "") },
+        // The mark after the count keeps "1  (50%)" in that order with Arabic digits:
+        // between two of them, the space and bracket would otherwise run right to left.
+        { label: "Games won", value: num(c.wins) + (c.games > 0 ? "\u200E  (" + num(Stats.winRate(c)) + "%)" : "") },
         { label: all ? "Best score" : "Best score, " + num(size) + "×" + num(size), value: num(bestScore) },
         { label: "Best tile", value: c.bestTile > 0 ? num(c.bestTile) : "—" },
         { label: "Total moves", value: num(c.moves) },
