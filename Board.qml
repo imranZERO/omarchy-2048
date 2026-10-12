@@ -307,12 +307,33 @@ Item {
 
   // ---- background -----------------------------------------------------------
 
+  // A soft shadow under the board, as rings outside its edge (the board is
+  // see-through, so a filled shadow would show through it), a pixel lower than
+  // the board so it reads as light from above.
+  Repeater {
+    model: [{ m: 1, w: 1, a: 0.10 }, { m: 3, w: 2, a: 0.04 }]
+    delegate: Rectangle {
+      required property var modelData
+      anchors.fill: parent
+      anchors.leftMargin: -modelData.m
+      anchors.rightMargin: -modelData.m
+      anchors.topMargin: -modelData.m + 1
+      anchors.bottomMargin: -modelData.m - 1
+      radius: Style.cornerRadius + modelData.m
+      color: "transparent"
+      border.width: modelData.w
+      border.color: Util.alpha("#000000", modelData.a)
+    }
+  }
+
   Rectangle {
     anchors.fill: parent
     radius: Style.cornerRadius
     color: Util.alpha(Commons.Color.foreground, 0.06)
   }
 
+  // Empty cells look slightly sunken: a shadow along the top edge, the cell
+  // itself below it.
   Repeater {
     model: root.size * root.size
     delegate: Rectangle {
@@ -322,7 +343,14 @@ Item {
       width: root.cell
       height: root.cell
       radius: Style.cornerRadius
-      color: Util.alpha(Commons.Color.foreground, 0.07)
+      color: Util.alpha("#000000", 0.07)
+
+      Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: Math.max(1, Math.round(root.cell * 0.025))
+        radius: Style.cornerRadius
+        color: Util.alpha(Commons.Color.foreground, 0.07)
+      }
     }
   }
 

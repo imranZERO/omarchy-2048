@@ -149,9 +149,16 @@ Item {
 
   // ---- visuals --------------------------------------------------------------
 
+  // A slight raised look: the face sits this many pixels up, over a darker lip.
+  readonly property int depth: Math.max(2, Math.round(cell * 0.04))
+  // How much darker the lip is. The same darkening reads much harder against a
+  // light background, so light themes get about half of it.
+  readonly property real lipShade: luminance(Commons.Color.popups.background) > 0.4 ? 0.12 : 0.22
+
   Rectangle {
     id: face
     anchors.fill: parent
+    anchors.bottomMargin: root.depth
     radius: Style.cornerRadius
     color: root.fillColor
     border.width: root.outlined ? Math.max(1, Math.round(root.cell * 0.04)) : 0
@@ -163,6 +170,17 @@ Item {
       yScale: 1 + (root.stretchH ? -0.06 : 0.12) * root.stretch
     }
     scale: root.kind === "spawn" || root.kind === "merge" ? 0 : 1
+
+    // The lip: a darker copy of the face peeking out below it. A child, so it
+    // scales and squashes with the face; z -1 draws it under the face.
+    Rectangle {
+      z: -1
+      anchors.fill: parent
+      anchors.topMargin: root.depth
+      anchors.bottomMargin: -root.depth
+      radius: Style.cornerRadius
+      color: Qt.tint(root.fillColor, Util.alpha("#000000", root.lipShade))
+    }
 
     Text {
       anchors.centerIn: parent
@@ -269,6 +287,7 @@ Item {
     id: glowComp
     Item {
       anchors.fill: parent
+      anchors.bottomMargin: -root.depth
       z: -2
       Repeater {
         model: [{ s: 1.1, a: 0.07 }, { s: 1.045, a: 0.14 }]
