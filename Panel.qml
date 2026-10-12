@@ -56,12 +56,9 @@ Panel {
   }
   readonly property real animSpeed:
     animationSetting === "Off" ? 0 : animationSetting === "Fast" ? 0.6 : animationSetting === "Slow" ? 1.6 : 1.0
-  // The key hints under the board show for the first game; after that the title
-  // (or ?) shows and hides them, for the rest of the session.
-  property var hintsForced: undefined
-  readonly property bool hintsShown: hintsForced !== undefined ? hintsForced : stats.games <= 1
-
-  function toggleHints() { hintsForced = !hintsShown }
+  // The rules: Classic, Fibonacci, Evil or Daily (see Game.js). Chosen on the
+  // Modes page, which the title opens.
+  readonly property string mode: Game.cleanMode(String(opt("mode", "Classic")))
 
   // 0% is off. The old on/off setting ("sound": false) still reads as off.
   readonly property int soundVolume: opt("sound", true) === false ? 0
@@ -95,7 +92,7 @@ Panel {
       Util.execArgv(["omarchy", "bar", "set", moduleName, key, JSON.stringify(value), "--json"])
     }
     // Let the change be heard: the bindings above have already caught up.
-    if (key === "soundVolume" && value > 0) sound.merge(64)
+    if (key === "soundVolume" && value > 0) sound.merge(6)
     overrideExpiry.restart()
   }
 
@@ -125,18 +122,27 @@ Panel {
   property int score: 0
   property int best: 0
   property bool canUndo: false
-  // Which page covers the board: "", "stats" or "settings".
+  // Which page covers the board: "", "stats", "settings" or "modes".
   property string page: ""
   readonly property bool statsOpen: page === "stats"
   readonly property bool settingsOpen: page === "settings"
+  readonly property bool modesOpen: page === "modes"
 
   function togglePage(name) {
-    if (name === "stats") hintStats.press()
     page = page === name ? "" : name
+  }
+
+  // Today, as Daily games are keyed (the local date).
+  function today() { return Qt.formatDate(new Date(), "yyyy-MM-dd") }
+
+  // Where a best score is kept: the game's slot (mode and size), and for Daily
+  // also its day, so each day starts with no best.
+  function bestKey(mode, size, day) {
+    return Game.slotKey(mode, size) + (mode === "Daily" ? "-" + day : "")
   }
   property bool loaded: false
 
-  // Saved data, by board size. Rewritten whole on every save.
+  // Saved data, by mode and board size (Game.slotKey). Rewritten whole on every save.
   property var bests: ({})
   property var savedGames: ({})
   property var stats: Stats.empty()
@@ -186,7 +192,7 @@ Panel {
   function startGame(sweep) {
     bestBeaten = false
     combo = 0
-    game = Game.newGame(boardSize)
+    game = Game.newGame(boardSize, mode, today())
     score = 0
     setHistory([])
     board.rebuild(Game.tiles(game), sweep ? "new" : "spawn")
@@ -194,7 +200,6 @@ Panel {
   }
 
   function newGame() {
-    hintNew.press()
     startGame(true)
     save()
   }
@@ -209,7 +214,6 @@ Panel {
   // dir: 0 up, 1 right, 2 down, 3 left
   function doMove(dir) {
     if (!game || page !== "") return
-    hintMove.press()
     var before = Game.serialize(game)
     var res = Game.move(game, dir)
     if (!res.moved) {
@@ -239,7 +243,7 @@ Panel {
       }
       best = score
     }
-    Stats.recordMove(stats, game, res)
+    Stats.recordMove(stats, game, res, Game.slotKey(game.mode, game.size))
     bumpStats()
     if (res.scoreDelta > 0) scorePill.flash(res.scoreDelta)
     // A streak of scoring moves earns a badge from the third on, and a quiet note.
@@ -255,11 +259,10 @@ Panel {
 
   function undo() {
     if (!game || page !== "" || history.length === 0) return
-    hintUndo.press()
     var list = history.slice()
     var previous = Game.fromSaved(list.pop())
     if (!previous) return
-    Stats.recordUndo(stats, game, previous)
+    Stats.recordUndo(stats, game, previous, Game.slotKey(game.mode, game.size))
     bumpStats()
     game = previous
     score = game.score
@@ -274,7 +277,8 @@ Panel {
     if (res.won) { sound.play("win"); return }
     if (res.over) { sound.play("over"); return }
     var top = 0
-    for (var i = 0; i < res.merges.length; i++) top = Math.max(top, res.merges[i].value)
+    for (var i = 0; i < res.merges.length; i++)
+      top = Math.max(top, Game.levelOf(res.merges[i].value, game.mode, game.size))
     if (top > 0) sound.merge(top)
   }
 
@@ -282,9 +286,15 @@ Panel {
 
   function save() {
     if (!game) return
-    var key = String(game.size)
+    var key = Game.slotKey(game.mode, game.size)
     var nextBests = Object.assign({}, bests)
-    nextBests[key] = best
+    nextBests[bestKey(game.mode, game.size, game.day)] = best
+    // Daily bests only matter on their day: drop the old ones.
+    var keys = Object.keys(nextBests)
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i]
+      if (k.indexOf("daily-") === 0 && !k.endsWith(today()) && !(game.day && k.endsWith(game.day))) delete nextBests[k]
+    }
     bests = nextBests
     var nextGames = Object.assign({}, savedGames)
     // Same rule as the original: a finished game is not resumed.
@@ -325,20 +335,24 @@ Panel {
   Component.onDestruction: if (dirty) root.writeState()
 
   function sameAsSaved() {
-    if (!game || game.size !== boardSize) return false
-    var saved = savedGames[String(boardSize)]
+    if (!game || game.size !== boardSize || game.mode !== mode) return false
+    // Yesterday's Daily game is done with: today's replaces it.
+    if (mode === "Daily" && game.day !== today()) return false
+    var saved = savedGames[Game.slotKey(mode, boardSize)]
     if (game.over) return !saved
     return !!saved && JSON.stringify(Game.serialize(game)) === JSON.stringify(saved)
   }
 
-  // Show the saved game for the current board size, or start one.
+  // Show the saved game for the current mode and board size, or start one.
   function loadSize() {
-    var key = String(boardSize)
-    best = Math.max(0, Number(bests[key]) || 0)
+    var key = Game.slotKey(mode, boardSize)
+    best = Math.max(0, Number(bests[bestKey(mode, boardSize, today())]) || 0)
     var saved = savedGames[key] ? Game.fromSaved(savedGames[key]) : null
+    if (saved && (saved.size !== boardSize || saved.mode !== mode || (mode === "Daily" && saved.day !== today())))
+      saved = null
     bestBeaten = false
     combo = 0
-    if (saved && saved.size === boardSize) {
+    if (saved) {
       game = saved
       score = game.score
       setHistory([])
@@ -370,7 +384,7 @@ Panel {
     // Re-reading on open must not throw away a game in progress or its undo
     // history; only another instance having moved since justifies a reload.
     if (loaded && sameAsSaved()) {
-      best = Math.max(best, Number(bests[String(boardSize)]) || 0)
+      best = Math.max(best, Number(bests[bestKey(mode, boardSize, today())]) || 0)
       return
     }
     loaded = true
@@ -419,6 +433,7 @@ Panel {
   onFloatingChanged: if (opened && floating) prepareWindow()
 
   onBoardSizeChanged: if (loaded) loadSize()
+  onModeChanged: if (loaded) loadSize()
 
   // omarchy-shell imranzero.2048 <open|close|toggle|move <up|right|down|left>|undo|newGame|stats>
   ShellIpc {
@@ -435,6 +450,7 @@ Panel {
     function newGame(): void { root.newGame() }
     function stats(): void { root.togglePage("stats") }
     function settings(): void { root.togglePage("settings") }
+    function modes(): void { root.togglePage("modes") }
   }
 
   ThemePalette { id: themePalette }
@@ -469,7 +485,7 @@ Panel {
   // ---- popup and window -----------------------------------------------------
 
   // The widest part of the UI. Sets the width of both the dropdown and the window.
-  readonly property real contentW: Math.max(board.side, settingsView.implicitWidth, hints.implicitWidth,
+  readonly property real contentW: Math.max(board.side, settingsView.implicitWidth,
     leftRow.implicitWidth + scorePill.implicitWidth + px(12))
 
   KeyboardPanel {
@@ -582,7 +598,7 @@ Panel {
       else if (t === "u" || t === "z" || t === "\b") root.undo()
       else if (t === "t") root.togglePage("stats")
       else if (t === "o" || t === ",") root.togglePage("settings")
-      else if (t === "?") root.toggleHints()
+      else if (t === "m" || t === "?") root.togglePage("modes")
       else if (t === "w") root.doMove(0)
       else if (t === "d") root.doMove(1)
       else if (t === "s") root.doMove(2)
@@ -614,34 +630,51 @@ Panel {
           anchors.verticalCenter: parent.verticalCenter
           spacing: root.px(10)
 
-          // The title, with a muted accent outline. Also a button: it shows and
-          // hides the key hints under the board.
+          // The title, with a muted accent outline, and a tag naming the mode
+          // when it is not Classic. Also a button: it opens the Modes page.
           Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: titleText.implicitWidth + root.px(16)
+            width: titleRow.implicitWidth + root.px(16)
             height: titleText.implicitHeight + root.px(4)
             radius: Style.cornerRadius
             color: titleArea.pressed ? Style.pressedFill
+              : root.modesOpen ? Style.selectedFill
               : titleArea.containsMouse ? Util.alpha(Commons.Color.accent, 0.1) : "transparent"
             border.width: Math.max(1, root.px(1))
-            border.color: Util.alpha(Commons.Color.accent, titleArea.containsMouse ? 0.7 : 0.4)
+            border.color: Util.alpha(Commons.Color.accent, titleArea.containsMouse || root.modesOpen ? 0.7 : 0.4)
 
             MouseArea {
               id: titleArea
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: root.toggleHints()
+              onClicked: root.togglePage("modes")
             }
 
-            Text {
-              id: titleText
+            Row {
+              id: titleRow
               anchors.centerIn: parent
-              text: "2048"
-              color: Commons.Color.accent
-              font.family: Style.font.family
-              font.bold: true
-              font.pixelSize: root.fpx(Style.font.heading + Style.space(4))
+              spacing: root.px(6)
+
+              Text {
+                id: titleText
+                anchors.verticalCenter: parent.verticalCenter
+                text: "2048"
+                color: Commons.Color.accent
+                font.family: Style.font.family
+                font.bold: true
+                font.pixelSize: root.fpx(Style.font.heading + Style.space(4))
+              }
+
+              Text {
+                visible: root.mode !== "Classic"
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.mode === "Fibonacci" ? "FIB" : root.mode.toUpperCase()
+                color: Commons.Color.muted
+                font.family: Style.font.family
+                font.bold: true
+                font.pixelSize: root.fpx(Style.font.caption)
+              }
             }
           }
 
@@ -690,13 +723,14 @@ Panel {
         }
       }
 
-      // Board, with the stats or settings page laid over it. The slot takes
+      // Board, with the stats, settings or modes page laid over it. The slot takes
       // the page's height while one is open and eases between sizes, so the
       // popup grows and shrinks smoothly.
       Item {
         width: parent.width
         height: root.settingsOpen ? Math.max(board.height, settingsView.implicitHeight)
           : root.statsOpen ? Math.max(board.height, statsView.implicitHeight)
+          : root.modesOpen ? Math.max(board.height, modesView.implicitHeight)
           : board.height
 
         // Eased in the dropdown. In a window it snaps: animating would resize
@@ -714,6 +748,7 @@ Panel {
           uiScale: root.uiScale
           speed: root.animSpeed
           numerals: root.numerals
+          mode: root.mode
           paletteMode: root.paletteMode
           palette: themePalette
           shadowShown: root.page === ""
@@ -733,7 +768,8 @@ Panel {
           best: root.best
           bests: root.bests
           numerals: root.numerals
-          size: root.boardSize
+          slot: Game.slotKey(root.mode, root.boardSize)
+          slotLabel: root.boardSize + "×" + root.boardSize + (root.mode === "Classic" ? "" : " " + (root.mode === "Fibonacci" ? "Fib" : root.mode))
           uiScale: root.uiScale
           onCloseRequested: root.page = ""
           // Everything the page shows: the counts and the best scores. The game
@@ -760,35 +796,25 @@ Panel {
           onChanged: function(key, value) { root.setSetting(key, value) }
           onCloseRequested: root.page = ""
         }
-      }
 
-      // Key hints, as key caps. They fold away (see hintsShown); the column skips
-      // its spacing for them once they are fully folded.
-      Item {
-        width: parent.width
-        height: root.hintsShown ? hints.implicitHeight : 0
-        opacity: root.hintsShown ? 1 : 0
-        visible: height > 0
-        clip: true
-
-        Behavior on height {
-          enabled: !root.floating
-          NumberAnimation { duration: Style.duration(Math.round(160 * root.animSpeed)); easing.type: Easing.OutCubic }
-        }
-        Behavior on opacity {
-          NumberAnimation { duration: Style.duration(Math.round(160 * root.animSpeed)) }
-        }
-
-        Row {
-          id: hints
+        ModesView {
+          id: modesView
           anchors.horizontalCenter: parent.horizontalCenter
-          spacing: root.px(8)
-
-          KeyHint { id: hintMove; key: "\u2191\u2193\u2190\u2192"; label: "move"; uiScale: root.uiScale; speed: root.animSpeed }
-          KeyHint { id: hintUndo; key: "U"; label: "undo"; uiScale: root.uiScale; speed: root.animSpeed }
-          KeyHint { id: hintNew; key: "R"; label: "new"; uiScale: root.uiScale; speed: root.animSpeed }
-          KeyHint { id: hintStats; key: "T"; label: "stats"; uiScale: root.uiScale; speed: root.animSpeed }
-          KeyHint { key: "?"; label: "hide"; uiScale: root.uiScale; speed: root.animSpeed }
+          anchors.top: parent.top
+          width: board.width
+          height: parent.height
+          shown: root.modesOpen
+          mode: root.mode
+          size: root.boardSize
+          numerals: root.numerals
+          dailyBest: Number(root.bests[root.bestKey("Daily", root.boardSize, root.today())]) || 0
+          uiScale: root.uiScale
+          // Picking a mode starts (or resumes) its game, so go straight to it.
+          onChosen: function(mode) {
+            if (mode !== root.mode) root.setSetting("mode", mode)
+            root.page = ""
+          }
+          onCloseRequested: root.page = ""
         }
       }
     }

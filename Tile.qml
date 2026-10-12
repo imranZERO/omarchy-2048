@@ -2,6 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Commons as Commons
 import "Numerals.js" as Numerals
+import "Game.js" as Game
 
 // One board tile. Position comes from col/row and is animated by the Behaviors
 // below, so moving a tile is just changing those two numbers. New tiles play
@@ -26,6 +27,9 @@ Item {
   property string paletteMode: "Theme"
   // The digits the value is drawn with; see Numerals.js.
   property string numerals: "Western"
+  // The game's mode and board size, which decide how far up the scale a value is.
+  property string mode: "Classic"
+  property int boardSize: 4
   // The theme's hue palette (a ThemePalette), set by Board.
   property var palette: null
 
@@ -98,10 +102,13 @@ Item {
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
   }
 
-  readonly property int level: Math.round(Math.log(value) / Math.LN2)
+  // 1 for the smallest tile, 11 for the goal on a 4x4 board, in any mode.
+  readonly property int level: Game.levelOf(value, mode, boardSize)
 
-  // Five digits do not fit a small cell, so 16384 and up read as 16K, 32K, 64K, 128K.
-  readonly property string label: Numerals.convert(value >= 16384 ? (value / 1024) + "K" : String(value), numerals)
+  // Five digits do not fit a small cell, so 16384 and up read as 16K, 32K, 64K,
+  // 128K, and Fibonacci's 17711 and up as 18K, 29K, ...
+  readonly property string label: Numerals.convert(value < 16384 ? String(value)
+    : value % 1024 === 0 ? (value / 1024) + "K" : Math.round(value / 1000) + "K", numerals)
 
   readonly property var classicFills: ({
     1: "#eee4da", 2: "#ede0c8", 3: "#f2b179", 4: "#f59563", 5: "#f67c5f", 6: "#f65e3b",

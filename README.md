@@ -20,7 +20,8 @@ The rules and animation timing are ported from
   board sizes or just the current one.
 - A combo badge for three or more scoring moves in a row that heats up as the streak
   grows, and a shimmer and confetti when you win. A new game sweeps the old tiles away.
-- Board sizes 3×3 to 6×6. Each size keeps its own game and best score.
+- Four modes: Classic, Fibonacci, Evil and Daily (see [Modes](#modes)).
+- Board sizes 3×3 to 6×6. Each mode and size keeps its own game and best score.
 - Tile colors from the active Omarchy theme, the original 2048 colors, or a
   single-hue shading of the theme accent.
 - A settings page inside the popup, including the window scale and which digits to
@@ -77,16 +78,16 @@ Either click closes it again.
 | r                    | New game                                          |
 | t                    | Stats page                                        |
 | o or ,               | Settings page                                     |
-| ?                    | Show or hide the key hints (or click the title)   |
+| m or ?               | Modes page, with the list of keys                 |
 | Enter / Space        | The overlay's main button (Try again, Keep going) |
-| Esc                  | Leave the stats or settings page, then close      |
+| Esc                  | Leave the open page, then close                   |
 | q                    | Close the panel                                   |
 
 The header row has the title and three icon buttons on the left (undo, new game and
 settings; hover for a tooltip) and your score and best score on the right. The score
-card is a button too: click it to open the stats. The title shows and hides the key
-hints under the board, which show by themselves only during your first game. You can
-also swipe on the board.
+card is a button too: click it to open the stats. The title is one as well: it opens the
+Modes page, which also lists the keys, and names the mode when it is not Classic. You
+can also swipe on the board.
 
 ### Commands
 
@@ -97,6 +98,7 @@ omarchy-shell imranzero.2048 undo
 omarchy-shell imranzero.2048 newGame
 omarchy-shell imranzero.2048 stats
 omarchy-shell imranzero.2048 settings
+omarchy-shell imranzero.2048 modes
 ```
 
 ### Keybinding
@@ -146,16 +148,32 @@ Tab (switch to the next bar panel) does nothing in this mode.
 The widget makes the window float itself, with no change to your Hyprland config (see
 [What it runs and touches](#what-it-runs-and-touches)).
 
+## Modes
+
+Pick one on the Modes page (click the title, or press `m`). Each mode keeps its own
+saved game, best score and stats, for each board size.
+
+| Mode      | What changes |
+|-----------|--------------|
+| Classic   | The original. The goal is 256, 2048, 4096 or 8192, by board size |
+| Fibonacci | Tiles are 1, 2, 3, 5, 8, … and two neighbours in the sequence merge (3 + 5 = 8, and 1 + 1 = 2). The goal is 144, 2584, 10946 or 17711 |
+| Evil      | Each new tile lands where it leaves your best next move worst. The first two are random |
+| Daily     | Classic, but everyone gets the same game for the date and board size. New game restarts today's game; the best score is for today only |
+
+A Fibonacci tile does not count toward the overall best tile in the stats, since its
+numbers are not comparable with the other modes'.
+
 ## Undo and stats
 
 Undo steps back through the last 50 moves of the current game. The history lasts while
 the shell runs and is not saved across restarts.
 
 The stats page shows games, wins, moves, best tile and the best score, for everything or
-for the current board size (switch at the top right; per-size numbers count from the
-version that added them, so they start at zero for an old save). Open it by clicking the score card, with `t`, or with the `stats` command.
+for the current mode and board size (switch at the top right; these numbers count from
+the version that added them, so they start at zero for an old save). Open it by clicking
+the score card, with `t`, or with the `stats` command.
 A game counts from its first move; undoing that move takes it back. Reset stats clears
-the counts and the best scores for every board size; saved games are kept.
+the counts and the best scores for every mode and board size; saved games are kept.
 
 ## Sound
 
@@ -240,11 +258,11 @@ folder, so keep the folder free of them. The symlink above is outside it, which 
 | `manifest.json` | Plugin id, entry point and where it sits in the bar |
 | `Panel.qml` | Entry point: bar icon, dropdown and window, settings, undo, saving, commands |
 | `Board.qml`, `Tile.qml` | The grid, the tile model and every tile animation |
-| `Game.js` | The rules, in pure JS with no QML in it |
+| `Game.js` | The rules and the modes, in pure JS with no QML in it |
 | `Stats.js` | Lifetime stats, in pure JS |
 | `Numerals.js` | The digit sets for the Numerals setting, in pure JS |
-| `StatsView.qml`, `SettingsView.qml`, `ScoreBox.qml` | The stats page, the settings page, the score boxes |
-| `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE and BEST capsule (which opens the stats), and the key caps under the board |
+| `StatsView.qml`, `SettingsView.qml`, `ModesView.qml`, `ScoreBox.qml` | The stats, settings and modes pages, and the score boxes |
+| `HeaderButton.qml`, `ScorePill.qml`, `KeyHint.qml` | The icon buttons, the SCORE and BEST capsule (which opens the stats), and the key caps on the Modes page |
 | `ThemePalette.qml` | Reads the theme's hue palette from `colors.toml` |
 | `Sound.qml`, `mixer.py` | Sends sounds to the mixer, which mixes them into one PipeWire stream and keeps the output awake |
 | `sounds/` | The generated sound files |

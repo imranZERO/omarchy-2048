@@ -14,11 +14,15 @@ Rectangle {
   property var stats: ({ games: 0, wins: 0, moves: 0, bestTile: 0 })
   property int best: 0
   property string numerals: "Western"
-  // Best score per board size, keyed "3" to "6".
+  // Best scores, keyed as Panel.bestKey makes them.
   property var bests: ({})
-  // "all" shows the lifetime totals, "size" the current board size.
+  // "all" shows the lifetime totals, "size" the current mode and board size.
   property string scope: "all"
-  property int size: 4
+  // The current mode and board size: its Game.slotKey, and how to name it ("4×4",
+  // "5×5 Fib").
+  property string slot: "4"
+  property string slotLabel: "4×4"
+  readonly property string shownSlotLabel: Numerals.convert(slotLabel, numerals)
   property real uiScale: 1.0
 
 
@@ -58,7 +62,7 @@ Rectangle {
     when: root.shown
     value: {
       var all = root.scope === "all"
-      var c = all ? stats : Stats.forSize(stats, size)
+      var c = all ? stats : Stats.forSlot(stats, slot)
       var bestScore = best
       if (all) {
         bestScore = 0
@@ -70,7 +74,7 @@ Rectangle {
         // The mark after the count keeps "1  (50%)" in that order with Arabic digits:
         // between two of them, the space and bracket would otherwise run right to left.
         { label: "Games won", value: num(c.wins) + (c.games > 0 ? "\u200E  (" + num(Stats.winRate(c)) + "%)" : "") },
-        { label: all ? "Best score" : "Best score, " + num(size) + "×" + num(size), value: num(bestScore) },
+        { label: all ? "Best score" : "Best score, " + shownSlotLabel, value: num(bestScore) },
         { label: "Best tile", value: c.bestTile > 0 ? num(c.bestTile) : "—" },
         { label: "Total moves", value: num(c.moves) },
         { label: "Moves per game", value: c.games > 0 ? num(Stats.averageMoves(c)) : "—" }
@@ -134,7 +138,7 @@ Rectangle {
         spacing: Math.round(Style.space(2) * root.uiScale)
 
         Repeater {
-          model: [{ id: "size", label: root.size + "×" + root.size }, { id: "all", label: "All" }]
+          model: [{ id: "size", label: root.shownSlotLabel }, { id: "all", label: "All" }]
           delegate: Rectangle {
             id: seg
             required property var modelData

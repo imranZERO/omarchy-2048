@@ -102,9 +102,9 @@ QtObject {
     streakTimer.restart()
   }
 
-  // Bigger tiles ring higher: 4 is the lowest note, 512 and up the highest.
-  function merge(value) {
-    var step = Math.round(Math.log(value) / Math.LN2) - 2
-    play("merge" + Math.max(0, Math.min(7, step)), nextCents())
+  // Bigger tiles ring higher. `level` is Game.levelOf(): 2 (a 4 in Classic) is
+  // the lowest note, 9 (512) and up the highest.
+  function merge(level) {
+    play("merge" + Math.max(0, Math.min(7, level - 2)), nextCents())
   }
 }

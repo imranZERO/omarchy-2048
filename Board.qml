@@ -4,6 +4,7 @@ import QtQuick.Effects
 import qs.Commons
 import qs.Commons as Commons
 import "Numerals.js" as Numerals
+import "Game.js" as Game
 
 // The playfield. Owns a ListModel of tiles keyed by stable ids, so a move
 // only edits positions and the Tile Behaviors do the animating. It knows
@@ -20,6 +21,8 @@ Item {
   property string paletteMode: "Theme"
   // The digits numbers are drawn with; see Numerals.js.
   property string numerals: "Western"
+  // The game's mode ("Classic", "Fibonacci", ...), for how big a tile counts as.
+  property string mode: "Classic"
   // The theme's hue palette (a ThemePalette), handed to each tile.
   property var palette: null
   // False while a page covers the board, whose shadow would show around it.
@@ -113,6 +116,9 @@ Item {
     onTriggered: root.purgeDying()
   }
 
+  // 128 and up in Classic, and the same point up the scale in other modes.
+  function big(value) { return Game.levelOf(value, mode, size) >= 7 }
+
   // Animate one move. `res` is the result of Game.move().
   function applyMove(res) {
     // Anything still fading from the previous move goes now, so mashing keys
@@ -133,7 +139,7 @@ Item {
     var thump = 0
     var top = null
     for (i = 0; i < res.merges.length; i++) {
-      if (res.merges[i].value >= 128) thump = Math.max(thump, res.merges[i].newMax ? 0.03 : 0.015)
+      if (big(res.merges[i].value)) thump = Math.max(thump, res.merges[i].newMax ? 0.03 : 0.015)
       if (!top || res.merges[i].value > top.value) top = res.merges[i]
     }
     for (i = 0; i < res.merges.length; i++) {
@@ -147,7 +153,7 @@ Item {
       }
       // Rings for the big ones; two when it is the best tile of the game, and a
       // shimmer as well for the goal tile.
-      var fx = res.won && g === top ? 3 : g.value >= 128 ? (g.newMax ? 2 : 1) : 0
+      var fx = res.won && g === top ? 3 : big(g.value) ? (g.newMax ? 2 : 1) : 0
       tilesModel.append({ tid: g.id, value: g.value, col: g.x, row: g.y, kind: "merge", dying: false, fx: fx, delay: 0 })
     }
 
@@ -432,6 +438,8 @@ Item {
         palette: root.palette
         paletteMode: root.paletteMode
         numerals: root.numerals
+        mode: root.mode
+        boardSize: root.size
         cell: root.cell
         gap: root.gap
         slideMs: root.slideMs
