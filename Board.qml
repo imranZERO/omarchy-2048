@@ -164,10 +164,23 @@ Item {
 
   // ---- combo badge ----------------------------------------------------------
 
-  // A badge on the board's top edge for a streak of scoring moves.
+  // A badge on the board's top edge for a streak of scoring moves. It heats up with
+  // the streak: colour, name, a bigger pop and, from the third tier, a glow.
+  readonly property var comboTiers: [
+    { from: 3,  name: "COMBO",   color: "",        text: "" },
+    { from: 5,  name: "HOT",     color: "#f5b83d", text: "#1b1b1b" },
+    { from: 8,  name: "BLAZING", color: "#f07a2a", text: "#1b1b1b" },
+    { from: 12, name: "INFERNO", color: "#e8365d", text: "#ffffff" },
+    { from: 20, name: "LEGEND",  color: "#a64bf4", text: "#ffffff" }
+  ]
+  property int comboTier: 0
+
   function showCombo(n) {
     if (speed <= 0 || Style.duration(1) === 0) return
-    comboText.text = "COMBO ×" + Numerals.convert(n, numerals)
+    var t = 0
+    for (var i = 0; i < comboTiers.length; i++) if (n >= comboTiers[i].from) t = i
+    comboTier = t
+    comboText.text = comboTiers[t].name + " ×" + Numerals.convert(n, numerals)
     comboAnim.restart()
   }
 
@@ -179,15 +192,28 @@ Item {
     width: comboText.implicitWidth + Math.round(Style.space(14) * root.k)
     height: comboText.implicitHeight + Math.round(Style.space(6) * root.k)
     radius: height / 2
-    color: Commons.Color.accent
+    color: root.comboTiers[root.comboTier].color || Commons.Color.accent
     opacity: 0
     visible: opacity > 0
     transformOrigin: Item.Center
 
+    // Halo behind the badge, only for the hotter tiers.
+    Rectangle {
+      id: comboGlow
+      z: -1
+      anchors.centerIn: parent
+      width: parent.width + Math.round(Style.space(12) * root.k)
+      height: parent.height + Math.round(Style.space(12) * root.k)
+      radius: height / 2
+      color: parent.color
+      opacity: 0
+      visible: opacity > 0
+    }
+
     Text {
       id: comboText
       anchors.centerIn: parent
-      color: Commons.Color.background
+      color: root.comboTiers[root.comboTier].text || Commons.Color.background
       font.family: Style.font.family
       font.bold: true
       font.pixelSize: Math.round(Style.font.caption * root.k)
@@ -196,11 +222,14 @@ Item {
 
   SequentialAnimation {
     id: comboAnim
-    ScriptAction { script: { comboBadge.opacity = 1; comboBadge.scale = 0.6 } }
-    NumberAnimation { target: comboBadge; property: "scale"; to: 1.18; duration: 90 * root.speed; easing.type: Easing.OutQuad }
+    ScriptAction { script: { comboBadge.opacity = 1; comboBadge.scale = 0.6; comboGlow.opacity = root.comboTier >= 2 ? 0.45 : 0 } }
+    NumberAnimation { target: comboBadge; property: "scale"; to: 1.18 + 0.06 * root.comboTier; duration: 90 * root.speed; easing.type: Easing.OutQuad }
     NumberAnimation { target: comboBadge; property: "scale"; to: 1; duration: 140 * root.speed; easing.type: Easing.OutBack }
-    PauseAnimation { duration: 650 * root.speed }
-    NumberAnimation { target: comboBadge; property: "opacity"; to: 0; duration: 250 * root.speed }
+    PauseAnimation { duration: (650 + 80 * root.comboTier) * root.speed }
+    ParallelAnimation {
+      NumberAnimation { target: comboBadge; property: "opacity"; to: 0; duration: 250 * root.speed }
+      NumberAnimation { target: comboGlow; property: "opacity"; to: 0; duration: 250 * root.speed }
+    }
   }
 
   // ---- win confetti ----------------------------------------------------------
