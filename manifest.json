@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "imranzero.2048",
   "name": "2048",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "imranzero",
   "license": "MIT",
   "description": "Play 2048 in your Omarchy shell, with smooth animations and your theme's colors.",
