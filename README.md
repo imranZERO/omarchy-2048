@@ -77,13 +77,16 @@ Either click closes it again.
 | r                    | New game                                          |
 | t                    | Stats page                                        |
 | o or ,               | Settings page                                     |
+| ?                    | Show or hide the key hints (or click the title)   |
 | Enter / Space        | The overlay's main button (Try again, Keep going) |
 | Esc                  | Leave the stats or settings page, then close      |
 | q                    | Close the panel                                   |
 
 The header row has the title and three icon buttons on the left (undo, new game and
 settings; hover for a tooltip) and your score and best score on the right. The score
-card is a button too: click it to open the stats. You can also swipe on the board.
+card is a button too: click it to open the stats. The title shows and hides the key
+hints under the board, which show by themselves only during your first game. You can
+also swipe on the board.
 
 ### Commands
 

@@ -56,6 +56,13 @@ Panel {
   }
   readonly property real animSpeed:
     animationSetting === "Off" ? 0 : animationSetting === "Fast" ? 0.6 : animationSetting === "Slow" ? 1.6 : 1.0
+  // The key hints under the board show for the first game; after that the title
+  // (or ?) shows and hides them, for the rest of the session.
+  property var hintsForced: undefined
+  readonly property bool hintsShown: hintsForced !== undefined ? hintsForced : stats.games <= 1
+
+  function toggleHints() { hintsForced = !hintsShown }
+
   readonly property bool soundOn: opt("sound", true) === true
   readonly property int soundVolume: Math.max(0, Math.min(100, Number(opt("soundVolume", 60))))
 
@@ -566,6 +573,7 @@ Panel {
       else if (t === "u" || t === "z" || t === "\b") root.undo()
       else if (t === "t") root.togglePage("stats")
       else if (t === "o" || t === ",") root.togglePage("settings")
+      else if (t === "?") root.toggleHints()
       else if (t === "w") root.doMove(0)
       else if (t === "d") root.doMove(1)
       else if (t === "s") root.doMove(2)
@@ -597,15 +605,25 @@ Panel {
           anchors.verticalCenter: parent.verticalCenter
           spacing: root.px(10)
 
-          // The title, with a muted accent outline.
+          // The title, with a muted accent outline. Also a button: it shows and
+          // hides the key hints under the board.
           Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: titleText.implicitWidth + root.px(16)
             height: titleText.implicitHeight + root.px(4)
             radius: Style.cornerRadius
-            color: "transparent"
+            color: titleArea.pressed ? Style.pressedFill
+              : titleArea.containsMouse ? Util.alpha(Commons.Color.accent, 0.1) : "transparent"
             border.width: Math.max(1, root.px(1))
-            border.color: Util.alpha(Commons.Color.accent, 0.4)
+            border.color: Util.alpha(Commons.Color.accent, titleArea.containsMouse ? 0.7 : 0.4)
+
+            MouseArea {
+              id: titleArea
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.toggleHints()
+            }
 
             Text {
               id: titleText
@@ -735,10 +753,22 @@ Panel {
         }
       }
 
-      // Key hints, as key caps.
+      // Key hints, as key caps. They fold away (see hintsShown); the column skips
+      // its spacing for them once they are fully folded.
       Item {
         width: parent.width
-        height: hints.implicitHeight
+        height: root.hintsShown ? hints.implicitHeight : 0
+        opacity: root.hintsShown ? 1 : 0
+        visible: height > 0
+        clip: true
+
+        Behavior on height {
+          enabled: !root.floating
+          NumberAnimation { duration: Style.duration(Math.round(160 * root.animSpeed)); easing.type: Easing.OutCubic }
+        }
+        Behavior on opacity {
+          NumberAnimation { duration: Style.duration(Math.round(160 * root.animSpeed)) }
+        }
 
         Row {
           id: hints
@@ -749,6 +779,7 @@ Panel {
           KeyHint { id: hintUndo; key: "U"; label: "undo"; uiScale: root.uiScale; speed: root.animSpeed }
           KeyHint { id: hintNew; key: "R"; label: "new"; uiScale: root.uiScale; speed: root.animSpeed }
           KeyHint { id: hintStats; key: "T"; label: "stats"; uiScale: root.uiScale; speed: root.animSpeed }
+          KeyHint { key: "?"; label: "hide"; uiScale: root.uiScale; speed: root.animSpeed }
         }
       }
     }
