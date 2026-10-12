@@ -3,9 +3,10 @@ import qs.Commons
 import qs.Commons as Commons
 import "Numerals.js" as Numerals
 
-// A labelled number. flash(delta) floats a "+N" up from the box and pulses the
-// number, for a move that scored.
-Rectangle {
+// A labelled number, one half of the score capsule (ScorePill draws the
+// background). flash(delta) floats a "+N" up from it and pulses the number, for a
+// move that scored.
+Item {
   id: box
 
   property string title: ""
@@ -14,8 +15,6 @@ Rectangle {
   property string numerals: "Western"
   // Animation time multiplier; 0 turns the effect off.
   property real speed: 1.0
-  // No background of its own, for use inside a shared container.
-  property bool plain: false
 
   readonly property bool animated: speed > 0 && Style.duration(1) > 0
 
@@ -42,8 +41,6 @@ Rectangle {
   // evenly in the card instead of being tight vertically and roomy sideways.
   implicitWidth: Math.max(Math.round(Style.space(48) * uiScale), label.implicitWidth + Math.round(Style.space(10) * uiScale))
   implicitHeight: label.implicitHeight + Math.round(Style.space(6) * uiScale)
-  radius: Style.cornerRadius
-  color: plain ? "transparent" : Util.alpha(Commons.Color.foreground, 0.08)
 
   Column {
     id: label

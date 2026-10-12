@@ -45,7 +45,6 @@ Rectangle {
 
     ScoreBox {
       id: scoreCell
-      plain: true
       title: "SCORE"
       value: root.score
       numerals: root.numerals
@@ -62,7 +61,6 @@ Rectangle {
 
     ScoreBox {
       id: bestCell
-      plain: true
       title: "BEST"
       value: root.best
       numerals: root.numerals

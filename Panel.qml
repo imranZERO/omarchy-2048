@@ -509,8 +509,8 @@ Panel {
 
   // ---- window mode ----------------------------------------------------------
 
-  // The one outer margin: from the edge of the popup or window to the board, the
-  // header and the footer alike, on all four sides.
+  // The one outer margin: from the edge of the popup or window to the header and
+  // the board, on all four sides.
   readonly property int floatPad: Style.space(16)
   // Set once Hyprland has been asked to float the window, so it never shows up
   // tiled for a moment first.
