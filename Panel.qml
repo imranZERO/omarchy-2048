@@ -63,8 +63,10 @@ Panel {
 
   function toggleHints() { hintsForced = !hintsShown }
 
-  readonly property bool soundOn: opt("sound", true) === true
-  readonly property int soundVolume: Math.max(0, Math.min(100, Number(opt("soundVolume", 60))))
+  // 0% is off. The old on/off setting ("sound": false) still reads as off.
+  readonly property int soundVolume: opt("sound", true) === false ? 0
+    : Math.max(0, Math.min(100, Number(opt("soundVolume", 60))))
+  readonly property bool soundOn: soundVolume > 0
 
   // What the settings page shows.
   readonly property var settingValues: ({
@@ -74,7 +76,6 @@ Panel {
     palette: paletteMode,
     numerals: numerals,
     animationSpeed: animationSetting,
-    sound: soundOn,
     soundVolume: soundVolume
   })
 
@@ -83,10 +84,13 @@ Panel {
     var next = Object.assign({}, overrides)
     next[key] = value
     overrides = next
-    // Let the change be heard: the bindings above have already caught up.
-    if (key === "soundVolume" || (key === "sound" && value === true))
-      sound.merge(64)
     Util.execArgv(["omarchy", "bar", "set", moduleName, key, JSON.stringify(value), "--json"])
+    if (key === "soundVolume") {
+      // A volume above 0 overrides the old on/off setting if it was off.
+      if (value > 0 && setting("sound", true) === false) setSetting("sound", true)
+      // Let the change be heard: the bindings above have already caught up.
+      if (value > 0) sound.merge(64)
+    }
     overrideExpiry.restart()
   }
 

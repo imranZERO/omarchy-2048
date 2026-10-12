@@ -39,32 +39,25 @@ Rectangle {
     acceptedButtons: Qt.AllButtons
   }
 
-  readonly property var onOff: [{ label: "Off", value: false }, { label: "On", value: true }]
-
-  // What the page offers. Volume only appears while sound is on.
-  readonly property var rows: {
-    var list = [
-      { key: "openAs", label: "Open as", kind: "choice", options: [
-        { label: "Dropdown", value: "Dropdown" }, { label: "Window", value: "Window" } ] },
-      { key: "scale", label: "Window scale", kind: "stepper", min: 60, max: 200, step: 10, suffix: "%" },
-      { key: "boardSize", label: "Board size", kind: "choice", options: [
-        { label: "3×3", value: 3 }, { label: "4×4", value: 4 },
-        { label: "5×5", value: 5 }, { label: "6×6", value: 6 } ] },
-      { key: "palette", label: "Tile colors", kind: "choice", options: [
-        { label: "Theme", value: "Theme" }, { label: "Classic", value: "Classic" }, { label: "Mono", value: "Mono" } ] },
-      { key: "numerals", label: "Numerals", kind: "cycle", options: [
-        { label: "2048", value: "Western" }, { label: "২০৪৮", value: "Bengali" },
-        { label: "२०४८", value: "Devanagari" }, { label: "٢٠٤٨", value: "Arabic" },
-        { label: "二〇四八", value: "Kanji" } ] },
-      { key: "animationSpeed", label: "Animations", kind: "choice", options: [
-        { label: "Off", value: "Off" }, { label: "Fast", value: "Fast" },
-        { label: "Normal", value: "Normal" }, { label: "Slow", value: "Slow" } ] },
-      { key: "sound", label: "Sound", kind: "choice", options: onOff }
-    ]
-    if (values.sound === true)
-      list.push({ key: "soundVolume", label: "Volume", kind: "stepper", min: 10, max: 100, step: 10, suffix: "%" })
-    return list
-  }
+  // What the page offers.
+  readonly property var rows: [
+    { key: "openAs", label: "Open as", kind: "choice", options: [
+      { label: "Dropdown", value: "Dropdown" }, { label: "Window", value: "Window" } ] },
+    { key: "scale", label: "Window scale", kind: "stepper", min: 60, max: 200, step: 10, suffix: "%" },
+    { key: "boardSize", label: "Board size", kind: "choice", options: [
+      { label: "3×3", value: 3 }, { label: "4×4", value: 4 },
+      { label: "5×5", value: 5 }, { label: "6×6", value: 6 } ] },
+    { key: "palette", label: "Tile colors", kind: "choice", options: [
+      { label: "Theme", value: "Theme" }, { label: "Classic", value: "Classic" }, { label: "Mono", value: "Mono" } ] },
+    { key: "numerals", label: "Numerals", kind: "cycle", options: [
+      { label: "2048", value: "Western" }, { label: "২০৪৮", value: "Bengali" },
+      { label: "२०४८", value: "Devanagari" }, { label: "٢٠٤٨", value: "Arabic" },
+      { label: "二〇四八", value: "Kanji" } ] },
+    { key: "animationSpeed", label: "Animations", kind: "choice", options: [
+      { label: "Off", value: "Off" }, { label: "Fast", value: "Fast" },
+      { label: "Normal", value: "Normal" }, { label: "Slow", value: "Slow" } ] },
+    { key: "soundVolume", label: "Sound", kind: "stepper", min: 0, max: 100, step: 10, suffix: "%", zero: "Off" }
+  ]
 
   // About as wide as the narrowest board, so this page never makes the column wider
   // than the board (which would inset the board from the header and footer). The
@@ -242,7 +235,8 @@ Rectangle {
 
               Text {
                 anchors.centerIn: parent
-                text: stepper.current + row.modelData.suffix
+                text: stepper.current === 0 && row.modelData.zero ? row.modelData.zero
+                  : stepper.current + row.modelData.suffix
                 color: Commons.Color.foreground
                 font.family: Style.font.family
                 font.bold: true

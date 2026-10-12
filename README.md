@@ -131,8 +131,7 @@ omarchy bar set imranzero.2048 scale 120 --json
 | Tile colors      | Theme, Classic, Mono     | Theme walks the active theme's hues; Classic is the original; Mono shades the accent |
 | Numerals         | Western, Bengali, Devanagari, Arabic, Kanji | Digits used on the tiles, scores and stats: 2048, ২০৪৮, २०४८, ٢٠٤٨, 二〇四八. Kanji is positional, one glyph per digit |
 | Animation speed  | Off, Fast, Normal, Slow  | The system reduce-motion setting is also respected |
-| Sound effects    | on / off (default on)    | |
-| Sound volume     | 10 to 100 % (default 60) | |
+| Sound            | Off, 10 to 100 % (default 60) | 0% is off |
 
 ## Window mode
 
@@ -160,7 +159,7 @@ the counts and the best scores for every board size; saved games are kept.
 
 ## Sound
 
-On by default; turn it off in Settings. One profile: a pitch-dropping "bloop" over a
+On by default; turn the Sound setting down to Off to silence it. One profile: a pitch-dropping "bloop" over a
 thump, with a short bright tick on the attack. Merges climb a pentatonic scale from C2,
 so bigger tiles ring higher and hit a little harder. A streak of three or more scoring
 moves adds a quiet high note after the move's own sound, climbing with the streak.
@@ -209,7 +208,7 @@ pw-cat -p --raw --rate 24000 --channels 1 --format s16 sounds/merge3.pcm
 - **Icons show as empty boxes:** the UI needs a Nerd Font. Omarchy's default has one.
 - **Numbers show as empty boxes with another Numerals setting:** the system needs a font
   with those digits (Noto Sans Bengali, Devanagari, Arabic or CJK cover all of them).
-- **No sound:** check that Sound effects is on in Settings and that `python3` and
+- **No sound:** check that Sound is above Off in Settings and that `python3` and
   `pw-cat` exist. The first sound after a long idle can be clipped only when the mixer is
   not running, for example when a move arrives through `omarchy-shell` while the popup is
   closed.
