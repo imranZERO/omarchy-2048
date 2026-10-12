@@ -6,8 +6,8 @@
 
 An [Omarchy](https://omarchy.org) bar-widget plugin, one click away in your bar. It
 opens as a dropdown under the bar icon or as a floating Hyprland window, with smooth
-animations, undo, stats, board sizes from 3×3 to 6×6, and colors taken from your
-active theme.
+animations, undo, stats, four game modes, board sizes from 3×3 to 6×6, and colors
+taken from your active theme.
 
 The rules and animation timing are ported from
 [gabrielecirulli/2048](https://github.com/gabrielecirulli/2048).
@@ -151,7 +151,12 @@ The widget makes the window float itself, with no change to your Hyprland config
 ## Modes
 
 Pick one on the Modes page (click the title, or press `m`). Each mode keeps its own
-saved game, best score and stats, for each board size.
+saved game, best score and stats, for each board size. The choice is saved with the
+settings, so it can also be set from a terminal:
+
+```sh
+omarchy bar set imranzero.2048 mode '"Fibonacci"' --json   # Classic, Fibonacci, Evil, Daily
+```
 
 | Mode      | What changes |
 |-----------|--------------|
