@@ -174,7 +174,6 @@ Item {
       xScale: 1 + (root.stretchH ? 0.12 : -0.06) * root.stretch
       yScale: 1 + (root.stretchH ? -0.06 : 0.12) * root.stretch
     }
-    scale: root.kind === "spawn" || root.kind === "merge" ? 0 : 1
 
     // The lip: a darker copy of the face peeking out below it. A child, so it
     // scales and squashes with the face; z -1 draws it under the face.
@@ -397,23 +396,35 @@ Item {
   // none are made then: the tile just shows its end state.
   readonly property bool animated: popMs > 0
 
-  onDyingChanged: if (dying && animated) (kind === "exit" ? exitComp : dyingComp).createObject(root)
+  // The tile's entrance (spawn, pop or undo fade), if it is still playing. A tile
+  // swept away by a new game stops it first, or it would pop back in mid-exit.
+  property var entryAnim: null
+
+  onDyingChanged: {
+    if (!dying || !animated) return
+    if (kind === "exit") {
+      if (entryAnim) entryAnim.stop()
+      exitComp.createObject(root)
+    } else {
+      dyingComp.createObject(root)
+    }
+  }
 
   Component.onCompleted: {
     if (level >= 11) glowComp.createObject(face)
-    if (!animated) {
-      face.scale = 1
-      return
-    }
-    if (kind === "spawn") spawnComp.createObject(root)
+    if (!animated) return
+    // Set once, not bound to `kind`: a tile relabelled "exit" by a new game must
+    // keep the scale it has, not jump to full size.
+    if (kind === "spawn" || kind === "merge") face.scale = 0
+    if (kind === "spawn") entryAnim = spawnComp.createObject(root)
     else if (kind === "merge") {
-      popComp.createObject(root)
+      entryAnim = popComp.createObject(root)
       flashComp.createObject(face)
       if (fx > 0) ringComp.createObject(root, { delayMs: landMs + popMs * 0.3, lifeMs: popMs * 2.4 })
       if (fx > 1) ringComp.createObject(root, {
         delayMs: landMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
       })
       if (fx > 2) shimmerComp.createObject(face)
-    } else if (kind === "restore") restoreComp.createObject(root)
+    } else if (kind === "restore") entryAnim = restoreComp.createObject(root)
   }
 }
