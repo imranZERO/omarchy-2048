@@ -79,6 +79,7 @@ Item {
     comboAnim.stop()
     comboHide.stop()
     comboBadge.opacity = 0
+    justWon = false
     purgeDying()
 
     var delay = 0
@@ -152,6 +153,7 @@ Item {
 
     if (thump > 0) thumpBoard(thump)
     if (res.won && top) celebrate(top.x, top.y)
+    justWon = res.won
 
     if (res.spawned) {
       var s = res.spawned
@@ -499,10 +501,13 @@ Item {
     }
   }
 
-  // A win waits for the goal tile's pop, shimmer and confetti to play out first.
+  // Set by the move that wins, so the overlay waits for the goal tile's pop,
+  // shimmer and confetti. A game loaded already won shows it at once.
+  property bool justWon: false
+
   Timer {
     id: overlayTimer
-    interval: Style.duration(Math.round((root.endState === "won" ? 1100 : 250) * root.speed))
+    interval: Style.duration(Math.round((root.justWon ? 1100 : 250) * root.speed))
     onTriggered: root.overlayOn = root.endState !== ""
   }
 
