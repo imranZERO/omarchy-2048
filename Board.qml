@@ -34,6 +34,8 @@ Item {
   readonly property int slideMs: Style.duration(Math.round(110 * speed))
   readonly property int popMs: Style.duration(Math.round(200 * speed))
   readonly property int spawnMs: Style.duration(Math.round(200 * speed))
+  // False with Animations set to Off or the system's reduce-motion on.
+  readonly property bool animated: speed > 0 && Style.duration(1) > 0
 
   // "" while playing, "over" or "won" when the overlay should show.
   property string endState: ""
@@ -93,8 +95,14 @@ Item {
       tilesModel.setProperty(mi, "row", m.y)
     }
 
+    // Big merges make the whole board thump as the tile lands; the goal tile
+    // sends confetti from where it was made.
+    var thump = 0
+    var top = null
     for (i = 0; i < res.merges.length; i++) {
       var g = res.merges[i]
+      if (g.value >= 128) thump = Math.max(thump, g.newMax ? 0.03 : 0.015)
+      if (!top || g.value > top.value) top = g
       for (var j = 0; j < g.fromIds.length; j++) {
         var si = indexOfTile(g.fromIds[j])
         if (si < 0) continue
@@ -107,19 +115,8 @@ Item {
       tilesModel.append({ tid: g.id, value: g.value, col: g.x, row: g.y, kind: "merge", dying: false, fx: fx })
     }
 
-    // Big merges make the whole board thump as the tile lands.
-    var thump = 0
-    for (i = 0; i < res.merges.length; i++) {
-      if (res.merges[i].value >= 128) thump = Math.max(thump, res.merges[i].newMax ? 0.03 : 0.015)
-    }
     if (thump > 0) thumpBoard(thump)
-
-    // The move that reached the goal: confetti from the tile that did it.
-    if (res.won) {
-      var top = res.merges[0]
-      for (i = 1; i < res.merges.length; i++) if (res.merges[i].value > top.value) top = res.merges[i]
-      celebrate(top.x, top.y)
-    }
+    if (res.won && top) celebrate(top.x, top.y)
 
     if (res.spawned) {
       var s = res.spawned
@@ -132,7 +129,7 @@ Item {
   // A move that did nothing: nudge the tiles toward `dir` and let them spring
   // back, like pushing against a wall. The ones at the wall go first.
   function bumpToward(dir) {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     var d = Math.max(3, Math.round(cell * 0.12))
     var dx = dir === 1 ? d : dir === 3 ? -d : 0
     var dy = dir === 2 ? d : dir === 0 ? -d : 0
@@ -146,14 +143,13 @@ Item {
   }
 
   property real thumpScale: 1
+  property real thumpTo: 1
 
   function thumpBoard(amount) {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     thumpTo = 1 + amount
     thumpAnim.restart()
   }
-
-  property real thumpTo: 1.015
 
   SequentialAnimation {
     id: thumpAnim
@@ -176,7 +172,7 @@ Item {
   property int comboTier: 0
 
   function showCombo(n) {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     var t = 0
     for (var i = 0; i < comboTiers.length; i++) if (n >= comboTiers[i].from) t = i
     comboTier = t
@@ -195,7 +191,6 @@ Item {
     color: root.comboTiers[root.comboTier].color || Commons.Color.accent
     opacity: 0
     visible: opacity > 0
-    transformOrigin: Item.Center
 
     // Halo behind the badge, only for the hotter tiers.
     Rectangle {
@@ -238,7 +233,7 @@ Item {
   // every piece along its own arc, so the cost is the pieces being drawn for
   // about a second, once per game.
   function celebrate(col, row) {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     burst.ox = gap + col * (cell + gap) + cell / 2
     burst.oy = gap + row * (cell + gap) + cell / 2
     burstAnim.restart()
@@ -384,11 +379,11 @@ Item {
   // The score counting up to endScore while the overlay opens.
   property real shownScore: 0
 
-  function num(n) { return Numerals.convert(Number(n).toLocaleString(Qt.locale(), "f", 0), numerals) }
+  function num(n) { return Numerals.format(n, numerals) }
 
   onOverlayOnChanged: {
     if (!overlayOn) return
-    if (speed <= 0 || Style.duration(1) === 0) { shownScore = endScore; return }
+    if (!animated) { shownScore = endScore; return }
     countAnim.restart()
   }
 
@@ -483,45 +478,15 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: Math.round(Style.space(6) * root.k)
 
-        Rectangle {
+        Chip {
           visible: root.endTile > 0
-          implicitWidth: tileChip.implicitWidth + Math.round(Style.space(14) * root.k)
-          implicitHeight: tileChip.implicitHeight + Math.round(Style.space(6) * root.k)
-          width: implicitWidth
-          height: implicitHeight
-          radius: height / 2
-          color: Util.alpha(Commons.Color.foreground, 0.14)
-          border.width: 1
-          border.color: Util.alpha(Commons.Color.foreground, 0.3)
-
-          Text {
-            id: tileChip
-            anchors.centerIn: parent
-            text: "Best tile " + root.endTile
-            color: Commons.Color.foreground
-            font.family: Style.font.family
-            font.pixelSize: Math.round(Style.font.caption * root.k)
-          }
+          text: "Best tile " + root.num(root.endTile)
         }
 
-        Rectangle {
+        Chip {
           visible: root.endBest
-          implicitWidth: bestChip.implicitWidth + Math.round(Style.space(14) * root.k)
-          implicitHeight: bestChip.implicitHeight + Math.round(Style.space(6) * root.k)
-          width: implicitWidth
-          height: implicitHeight
-          radius: height / 2
-          color: Commons.Color.accent
-
-          Text {
-            id: bestChip
-            anchors.centerIn: parent
-            text: "New best!"
-            color: Commons.Color.background
-            font.family: Style.font.family
-            font.bold: true
-            font.pixelSize: Math.round(Style.font.caption * root.k)
-          }
+          text: "New best!"
+          highlight: true
         }
       }
 
@@ -545,16 +510,37 @@ Item {
     }
   }
 
+  // A small capsule of text under the score.
+  component Chip: Rectangle {
+    id: chip
+    property alias text: chipText.text
+    property bool highlight: false
+
+    implicitWidth: chipText.implicitWidth + Math.round(Style.space(14) * root.k)
+    implicitHeight: chipText.implicitHeight + Math.round(Style.space(6) * root.k)
+    radius: height / 2
+    color: highlight ? Commons.Color.accent : Util.alpha(Commons.Color.foreground, 0.14)
+    border.width: highlight ? 0 : 1
+    border.color: Util.alpha(Commons.Color.foreground, 0.3)
+
+    Text {
+      id: chipText
+      anchors.centerIn: parent
+      color: chip.highlight ? Commons.Color.background : Commons.Color.foreground
+      font.family: Style.font.family
+      font.bold: chip.highlight
+      font.pixelSize: Math.round(Style.font.caption * root.k)
+    }
+  }
+
   component OverlayButton: Rectangle {
     id: btn
     property string label: ""
     property bool primary: false
     signal activated()
 
-    readonly property real k: root.k
-
-    implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * k)
-    implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * k)
+    implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * root.k)
+    implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * root.k)
     radius: Style.cornerRadius
     scale: area.pressed ? 0.96 : 1
     Behavior on scale { NumberAnimation { duration: Style.duration(90); easing.type: Easing.OutQuad } }
@@ -572,7 +558,7 @@ Item {
       color: btn.primary ? Commons.Color.background : Commons.Color.foreground
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round(Style.font.body * btn.k)
+      font.pixelSize: Math.round(Style.font.body * root.k)
     }
 
     MouseArea {

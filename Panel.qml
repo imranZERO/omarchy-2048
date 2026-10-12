@@ -368,8 +368,6 @@ Panel {
     onLoadFailed: root.restore("")
   }
 
-  // The bar has one instance of this widget per monitor, each with its own
-  // in-memory game. Re-reading on open keeps them in step.
   // The dropdown's content settles in: a short slide down and scale up, on top of the
   // panel's own fade. Window mode has no bar to come from, so it skips this.
   property real enterT: 1
@@ -387,6 +385,8 @@ Panel {
   onOpenedChanged: {
     if (opened && !floating && animSpeed > 0) enterAnim.restart()
     if (opened) {
+      // The bar has one instance of this widget per monitor, each with its own
+      // in-memory game. Re-reading on open keeps them in step.
       // The file is older than this instance's game while a write is pending.
       if (!dirty) stateFile.reload()
       if (floating) prepareWindow()

@@ -30,6 +30,11 @@ function convert(text, name) {
   return out
 }
 
+// A whole number with the locale's thousands separators, in the given digits.
+function format(n, name) {
+  return convert(Number(n).toLocaleString(Qt.locale(), "f", 0), name)
+}
+
 // How wide one digit is, in ems, for fitting text to a tile. The CJK digits are
 // full-width; the others are close to a Latin digit in the UI font.
 function width(name) {

@@ -45,7 +45,7 @@ Rectangle {
   }
 
   function num(n) {
-    return Numerals.convert(Number(n).toLocaleString(Qt.locale(), "f", 0), numerals)
+    return Numerals.format(n, numerals)
   }
 
   // Only rebuilt while the page is showing: stats and best change on every move,

@@ -129,7 +129,7 @@ Item {
   }
 
   function classicFill() {
-    return level > 11 ? "#3c3a32" : (classicFills[level] || "#3c3a32")
+    return classicFills[level] || "#3c3a32"
   }
 
   readonly property color fillColor:
@@ -156,7 +156,6 @@ Item {
     color: root.fillColor
     border.width: root.outlined ? Math.max(1, Math.round(root.cell * 0.04)) : 0
     border.color: root.outlineColor
-    transformOrigin: Item.Center
     transform: Scale {
       origin.x: face.width / 2
       origin.y: face.height / 2
@@ -164,7 +163,6 @@ Item {
       yScale: 1 + (root.stretchH ? -0.06 : 0.12) * root.stretch
     }
     scale: root.kind === "spawn" || root.kind === "merge" ? 0 : 1
-    opacity: 1
 
     Text {
       anchors.centerIn: parent
@@ -250,7 +248,6 @@ Item {
       border.width: Math.max(2, Math.round(root.cell * thickness))
       border.color: root.fillColor
       opacity: 0
-      transformOrigin: Item.Center
       SequentialAnimation {
         running: true
         onStopped: ring.destroy()

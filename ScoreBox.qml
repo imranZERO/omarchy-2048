@@ -18,16 +18,17 @@ Rectangle {
   property bool plain: false
 
   readonly property real k: Math.max(0.6, uiScale)
+  readonly property bool animated: speed > 0 && Style.duration(1) > 0
 
   function flash(delta) {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     gainComponent.createObject(box, { text: "+" + Numerals.convert(delta, box.numerals) })
     pulse.restart()
   }
 
   // A bigger pulse and a flash of the accent color, for a new best score.
   function celebrate() {
-    if (speed <= 0 || Style.duration(1) === 0) return
+    if (!animated) return
     celebrateAnim.restart()
   }
 
@@ -54,13 +55,12 @@ Rectangle {
     Text {
       id: number
       anchors.horizontalCenter: parent.horizontalCenter
-      text: Numerals.convert(Number(box.value).toLocaleString(Qt.locale(), "f", 0), box.numerals)
+      text: Numerals.format(box.value, box.numerals)
       property real hot: 0
       color: Qt.tint(Commons.Color.foreground, Util.alpha(Commons.Color.accent, hot))
       font.family: Style.font.family
       font.bold: true
       font.pixelSize: Math.round((Style.font.title - 1) * box.k)
-      transformOrigin: Item.Center
 
       ParallelAnimation {
         id: celebrateAnim

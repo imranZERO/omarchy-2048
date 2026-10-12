@@ -232,7 +232,7 @@ function fromSaved(saved) {
   var state = newState(size)
   for (var i = 0; i < saved.tiles.length; i++) {
     var t = saved.tiles[i]
-    if (!t || !isFinite(t.x) || !isFinite(t.y) || !isFinite(t.value)) return null
+    if (!t || !Number.isInteger(t.x) || !Number.isInteger(t.y) || !isFinite(t.value)) return null
     if (t.x < 0 || t.x >= size || t.y < 0 || t.y >= size) return null
     if (t.value < 2 || (t.value & (t.value - 1)) !== 0) return null
     if (state.cells[t.x][t.y]) return null
