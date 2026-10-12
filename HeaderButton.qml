@@ -8,12 +8,11 @@ Button {
   property int glyph: 0
   property real uiScale: 1.0
 
-  readonly property real k: Math.max(0.6, uiScale)
 
   iconText: String.fromCodePoint(glyph)
-  iconSize: Math.max(8, Math.round(Style.font.icon * k))
+  iconSize: Math.max(8, Math.round(Style.font.icon * uiScale))
   // Borderless: it only shows a fill on hover, or while its page is open.
   bordered: false
-  width: Math.round(Style.space(26) * k)
+  width: Math.round(Style.space(26) * uiScale)
   height: width
 }

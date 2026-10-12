@@ -17,7 +17,6 @@ Rectangle {
   // No background of its own, for use inside a shared container.
   property bool plain: false
 
-  readonly property real k: Math.max(0.6, uiScale)
   readonly property bool animated: speed > 0 && Style.duration(1) > 0
 
   function flash(delta) {
@@ -34,8 +33,8 @@ Rectangle {
 
   // Padding of about 3 px above and below and 5 px either side, so the text sits
   // evenly in the card instead of being tight vertically and roomy sideways.
-  implicitWidth: Math.max(Math.round(Style.space(48) * k), label.implicitWidth + Math.round(Style.space(10) * k))
-  implicitHeight: label.implicitHeight + Math.round(Style.space(6) * k)
+  implicitWidth: Math.max(Math.round(Style.space(48) * uiScale), label.implicitWidth + Math.round(Style.space(10) * uiScale))
+  implicitHeight: label.implicitHeight + Math.round(Style.space(6) * uiScale)
   radius: Style.cornerRadius
   color: plain ? "transparent" : Util.alpha(Commons.Color.foreground, 0.08)
 
@@ -49,7 +48,7 @@ Rectangle {
       color: Commons.Color.muted
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.max(8, Math.round((Style.font.caption - 1) * box.k))
+      font.pixelSize: Math.max(8, Math.round((Style.font.caption - 1) * box.uiScale))
     }
 
     Text {
@@ -60,7 +59,7 @@ Rectangle {
       color: Qt.tint(Commons.Color.foreground, Util.alpha(Commons.Color.accent, hot))
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round((Style.font.title - 1) * box.k)
+      font.pixelSize: Math.round((Style.font.title - 1) * box.uiScale)
 
       ParallelAnimation {
         id: celebrateAnim
@@ -93,12 +92,12 @@ Rectangle {
       color: Commons.Color.accent
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round(Style.font.title * box.k)
+      font.pixelSize: Math.round(Style.font.title * box.uiScale)
 
       ParallelAnimation {
         running: true
         NumberAnimation {
-          target: gain; property: "y"; from: 0; to: -Math.round(Style.space(16) * box.k)
+          target: gain; property: "y"; from: 0; to: -Math.round(Style.space(16) * box.uiScale)
           duration: Style.duration(600 * box.speed); easing.type: Easing.InCubic
         }
         NumberAnimation {

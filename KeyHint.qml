@@ -29,14 +29,13 @@ Row {
     easing.type: Easing.OutQuad
   }
 
-  readonly property real k: Math.max(0.6, uiScale)
 
-  spacing: Math.round(Style.space(4) * k)
+  spacing: Math.round(Style.space(4) * uiScale)
 
   Rectangle {
     anchors.verticalCenter: parent.verticalCenter
-    width: Math.max(keyText.implicitWidth + Math.round(Style.space(8) * root.k), height)
-    height: keyText.implicitHeight + Math.round(Style.space(1) * root.k)
+    width: Math.max(keyText.implicitWidth + Math.round(Style.space(8) * root.uiScale), height)
+    height: keyText.implicitHeight + Math.round(Style.space(1) * root.uiScale)
     radius: Math.max(2, Style.cornerRadius)
     color: Util.alpha(Commons.Color.foreground, 0.1 + 0.3 * root.lit)
     scale: 1 - 0.12 * root.lit
@@ -48,7 +47,7 @@ Row {
       color: Commons.Color.foreground
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.max(8, Math.round((Style.font.caption - 2) * root.k))
+      font.pixelSize: Math.max(8, Math.round((Style.font.caption - 2) * root.uiScale))
     }
   }
 
@@ -57,6 +56,6 @@ Row {
     text: root.label
     color: Commons.Color.muted
     font.family: Style.font.family
-    font.pixelSize: Math.max(8, Math.round((Style.font.caption - 2) * root.k))
+    font.pixelSize: Math.max(8, Math.round((Style.font.caption - 2) * root.uiScale))
   }
 }

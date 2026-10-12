@@ -21,7 +21,6 @@ Rectangle {
   property int size: 4
   property real uiScale: 1.0
 
-  readonly property real k: Math.max(0.8, uiScale)
 
   signal closeRequested()
   signal resetRequested()
@@ -87,15 +86,15 @@ Rectangle {
 
   // Tall enough for the rows and buttons, whatever the board size; Panel sizes
   // the board's slot to at least this.
-  implicitHeight: content.implicitHeight + buttons.implicitHeight + Math.round(Style.space(48) * k)
+  implicitHeight: content.implicitHeight + buttons.implicitHeight + Math.round(Style.space(48) * uiScale)
 
   Column {
     id: content
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: parent.top
-    anchors.margins: Math.round(Style.space(16) * root.k)
-    spacing: Math.round(Style.space(10) * root.k)
+    anchors.margins: Math.round(Style.space(16) * root.uiScale)
+    spacing: Math.round(Style.space(10) * root.uiScale)
 
     Item {
       width: parent.width
@@ -103,11 +102,11 @@ Rectangle {
 
       Row {
         id: headerLeft
-        spacing: Math.round(Style.space(8) * root.k)
+        spacing: Math.round(Style.space(8) * root.uiScale)
 
         Button {
           iconText: String.fromCodePoint(0xF004D)
-          iconSize: Math.round(Style.font.icon * root.k)
+          iconSize: Math.round(Style.font.icon * root.uiScale)
           tooltipText: "Back"
           onClicked: root.closeRequested()
         }
@@ -118,7 +117,7 @@ Rectangle {
           color: Commons.Color.accent
           font.family: Style.font.family
           font.bold: true
-          font.pixelSize: Math.round(Style.font.heading * root.k)
+          font.pixelSize: Math.round(Style.font.heading * root.uiScale)
         }
       }
 
@@ -127,7 +126,7 @@ Rectangle {
         id: scopeSwitch
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Math.round(Style.space(2) * root.k)
+        spacing: Math.round(Style.space(2) * root.uiScale)
 
         Repeater {
           model: [{ id: "size", label: root.size + "×" + root.size }, { id: "all", label: "All" }]
@@ -135,8 +134,8 @@ Rectangle {
             id: seg
             required property var modelData
             readonly property bool on: root.scope === modelData.id
-            implicitWidth: segText.implicitWidth + Math.round(Style.space(14) * root.k)
-            implicitHeight: segText.implicitHeight + Math.round(Style.space(8) * root.k)
+            implicitWidth: segText.implicitWidth + Math.round(Style.space(14) * root.uiScale)
+            implicitHeight: segText.implicitHeight + Math.round(Style.space(8) * root.uiScale)
             radius: Style.cornerRadius
             color: on ? Util.alpha(Commons.Color.accent, 0.22)
               : segArea.containsMouse ? Util.alpha(Commons.Color.foreground, 0.1) : "transparent"
@@ -148,7 +147,7 @@ Rectangle {
               color: seg.on ? Commons.Color.accent : Commons.Color.muted
               font.family: Style.font.family
               font.bold: seg.on
-              font.pixelSize: Math.round(Style.font.body * root.k)
+              font.pixelSize: Math.round(Style.font.body * root.uiScale)
             }
 
             MouseArea {
@@ -178,7 +177,7 @@ Rectangle {
           text: row.modelData.label
           color: Commons.Color.muted
           font.family: Style.font.family
-          font.pixelSize: Math.round(Style.font.body * root.k)
+          font.pixelSize: Math.round(Style.font.body * root.uiScale)
         }
 
         Text {
@@ -189,7 +188,7 @@ Rectangle {
           color: Commons.Color.foreground
           font.family: Style.font.family
           font.bold: true
-          font.pixelSize: Math.round(Style.font.subtitle * root.k)
+          font.pixelSize: Math.round(Style.font.subtitle * root.uiScale)
         }
       }
     }
@@ -199,13 +198,13 @@ Rectangle {
     id: buttons
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    anchors.margins: Math.round(Style.space(16) * root.k)
-    spacing: Math.round(Style.space(8) * root.k)
+    anchors.margins: Math.round(Style.space(16) * root.uiScale)
+    spacing: Math.round(Style.space(8) * root.uiScale)
 
     Button {
       text: root.confirmReset ? "Really reset?" : "Reset stats"
       bordered: true
-      fontSize: Math.round(Style.font.body * root.k)
+      fontSize: Math.round(Style.font.body * root.uiScale)
       onClicked: {
         if (root.confirmReset) { root.confirmReset = false; root.resetRequested() }
         else root.confirmReset = true

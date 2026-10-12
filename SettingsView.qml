@@ -14,7 +14,6 @@ Rectangle {
   property var values: ({})
   property real uiScale: 1.0
 
-  readonly property real k: Math.max(0.8, uiScale)
 
   signal changed(string key, var value)
   signal closeRequested()
@@ -67,23 +66,23 @@ Rectangle {
   // About as wide as the narrowest board, so this page never makes the column wider
   // than the board (which would inset the board from the header and footer). The
   // longest row, a label and a four-way picker, still fits.
-  implicitWidth: Math.round(Style.space(300) * k)
-  implicitHeight: content.implicitHeight + Math.round(Style.space(32) * k)
+  implicitWidth: Math.round(Style.space(300) * uiScale)
+  implicitHeight: content.implicitHeight + Math.round(Style.space(32) * uiScale)
 
   Column {
     id: content
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: parent.top
-    anchors.margins: Math.round(Style.space(16) * root.k)
-    spacing: Math.round(Style.space(9) * root.k)
+    anchors.margins: Math.round(Style.space(16) * root.uiScale)
+    spacing: Math.round(Style.space(9) * root.uiScale)
 
     Row {
-      spacing: Math.round(Style.space(8) * root.k)
+      spacing: Math.round(Style.space(8) * root.uiScale)
 
       Button {
         iconText: String.fromCodePoint(0xF004D)
-        iconSize: Math.round(Style.font.icon * root.k)
+        iconSize: Math.round(Style.font.icon * root.uiScale)
         tooltipText: "Back"
         onClicked: root.closeRequested()
       }
@@ -94,7 +93,7 @@ Rectangle {
         color: Commons.Color.accent
         font.family: Style.font.family
         font.bold: true
-        font.pixelSize: Math.round(Style.font.heading * root.k)
+        font.pixelSize: Math.round(Style.font.heading * root.uiScale)
       }
     }
 
@@ -113,7 +112,7 @@ Rectangle {
           text: row.modelData.label
           color: Commons.Color.muted
           font.family: Style.font.family
-          font.pixelSize: Math.round(Style.font.body * root.k)
+          font.pixelSize: Math.round(Style.font.body * root.uiScale)
         }
 
         Loader {
@@ -128,7 +127,7 @@ Rectangle {
           id: choiceComponent
 
           Row {
-            spacing: Math.round(Style.space(4) * root.k)
+            spacing: Math.round(Style.space(4) * root.uiScale)
 
             Repeater {
               model: row.modelData.options
@@ -137,8 +136,8 @@ Rectangle {
                 required property var modelData
                 readonly property bool selected: choice.modelData.value === root.values[row.modelData.key]
 
-                implicitWidth: choiceText.implicitWidth + Math.round(Style.space(18) * root.k)
-                implicitHeight: choiceText.implicitHeight + Math.round(Style.space(10) * root.k)
+                implicitWidth: choiceText.implicitWidth + Math.round(Style.space(18) * root.uiScale)
+                implicitHeight: choiceText.implicitHeight + Math.round(Style.space(10) * root.uiScale)
                 radius: Style.cornerRadius
                 color: selected
                   ? Util.alpha(Commons.Color.accent, 0.85)
@@ -151,7 +150,7 @@ Rectangle {
                   color: choice.selected ? Commons.Color.background : Commons.Color.foreground
                   font.family: Style.font.family
                   font.bold: choice.selected
-                  font.pixelSize: Math.round(Style.font.bodySmall * root.k)
+                  font.pixelSize: Math.round(Style.font.bodySmall * root.uiScale)
                 }
 
                 MouseArea {
@@ -173,7 +172,7 @@ Rectangle {
 
           Row {
             id: cycler
-            spacing: Math.round(Style.space(4) * root.k)
+            spacing: Math.round(Style.space(4) * root.uiScale)
 
             readonly property var options: row.modelData.options
             readonly property int index: {
@@ -193,8 +192,8 @@ Rectangle {
             }
 
             Item {
-              implicitWidth: Math.round(Style.space(78) * root.k)
-              implicitHeight: Math.round(Style.space(24) * root.k)
+              implicitWidth: Math.round(Style.space(78) * root.uiScale)
+              implicitHeight: Math.round(Style.space(24) * root.uiScale)
 
               Text {
                 anchors.centerIn: parent
@@ -202,7 +201,7 @@ Rectangle {
                 color: Commons.Color.foreground
                 font.family: Style.font.family
                 font.bold: true
-                font.pixelSize: Math.round(Style.font.bodySmall * root.k)
+                font.pixelSize: Math.round(Style.font.bodySmall * root.uiScale)
               }
             }
 
@@ -218,7 +217,7 @@ Rectangle {
 
           Row {
             id: stepper
-            spacing: Math.round(Style.space(4) * root.k)
+            spacing: Math.round(Style.space(4) * root.uiScale)
 
             readonly property real current: Number(root.values[row.modelData.key])
 
@@ -234,9 +233,9 @@ Rectangle {
             }
 
             Item {
-              implicitWidth: Math.round(Style.space(54) * root.k)
+              implicitWidth: Math.round(Style.space(54) * root.uiScale)
               // As tall as the step buttons beside it, so the label centers on them.
-              implicitHeight: Math.round(Style.space(24) * root.k)
+              implicitHeight: Math.round(Style.space(24) * root.uiScale)
 
               Text {
                 anchors.centerIn: parent
@@ -244,7 +243,7 @@ Rectangle {
                 color: Commons.Color.foreground
                 font.family: Style.font.family
                 font.bold: true
-                font.pixelSize: Math.round(Style.font.bodySmall * root.k)
+                font.pixelSize: Math.round(Style.font.bodySmall * root.uiScale)
               }
             }
 
@@ -264,8 +263,8 @@ Rectangle {
     property string glyph: ""
     signal activated()
 
-    implicitWidth: Math.round(Style.space(26) * root.k)
-    implicitHeight: Math.round(Style.space(24) * root.k)
+    implicitWidth: Math.round(Style.space(26) * root.uiScale)
+    implicitHeight: Math.round(Style.space(24) * root.uiScale)
     radius: Style.cornerRadius
     opacity: enabled ? 1 : 0.35
     color: Util.alpha(Commons.Color.foreground, stepArea.containsMouse && enabled ? 0.16 : 0.07)
@@ -276,7 +275,7 @@ Rectangle {
       color: Commons.Color.foreground
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round(Style.font.body * root.k)
+      font.pixelSize: Math.round(Style.font.body * root.uiScale)
     }
 
     MouseArea {

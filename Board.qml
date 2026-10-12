@@ -28,7 +28,6 @@ Item {
   readonly property var gapBase: ({ 3: 10, 4: 10, 5: 8, 6: 8 })
   readonly property int cell: Math.max(16, Math.round(Style.space(cellBase[size] || 64) * uiScale))
   readonly property int gap: Math.max(3, Math.round(Style.space(gapBase[size] || 10) * uiScale))
-  readonly property real k: Math.max(0.6, uiScale)
   readonly property int side: size * cell + (size + 1) * gap
 
   readonly property int slideMs: Style.duration(Math.round(110 * speed))
@@ -196,8 +195,8 @@ Item {
     z: 5
     anchors.horizontalCenter: parent.horizontalCenter
     y: -Math.round(height * 0.55)
-    width: comboText.implicitWidth + Math.round(Style.space(14) * root.k)
-    height: comboText.implicitHeight + Math.round(Style.space(6) * root.k)
+    width: comboText.implicitWidth + Math.round(Style.space(14) * root.uiScale)
+    height: comboText.implicitHeight + Math.round(Style.space(6) * root.uiScale)
     radius: height / 2
     color: root.comboTiers[root.comboTier].color || Commons.Color.accent
     opacity: 0
@@ -208,8 +207,8 @@ Item {
       id: comboGlow
       z: -1
       anchors.centerIn: parent
-      width: parent.width + Math.round(Style.space(12) * root.k)
-      height: parent.height + Math.round(Style.space(12) * root.k)
+      width: parent.width + Math.round(Style.space(12) * root.uiScale)
+      height: parent.height + Math.round(Style.space(12) * root.uiScale)
       radius: height / 2
       color: parent.color
       opacity: 0
@@ -222,7 +221,7 @@ Item {
       color: root.comboTiers[root.comboTier].text || Commons.Color.background
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round(Style.font.caption * root.k)
+      font.pixelSize: Math.round(Style.font.caption * root.uiScale)
     }
   }
 
@@ -364,7 +363,7 @@ Item {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton
     property point origin: Qt.point(0, 0)
-    readonly property real threshold: Style.space(24) * root.k
+    readonly property real threshold: Style.space(24) * root.uiScale
 
     onPressed: function(mouse) { origin = Qt.point(mouse.x, mouse.y) }
     onReleased: function(mouse) {
@@ -449,7 +448,7 @@ Item {
       Behavior on scale {
         NumberAnimation { duration: Style.duration(Math.round(350 * root.speed)); easing.type: Easing.OutBack }
       }
-      spacing: Math.round(Style.space(14) * root.k)
+      spacing: Math.round(Style.space(14) * root.uiScale)
 
       Text {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -459,13 +458,13 @@ Item {
         font.bold: true
         font.letterSpacing: 1
         font.capitalization: Font.AllUppercase
-        font.pixelSize: Math.round(Style.font.body * root.k)
+        font.pixelSize: Math.round(Style.font.body * root.uiScale)
       }
 
       // The score, counting up, and what it took.
       Column {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(2) * root.k)
+        spacing: Math.round(Style.space(2) * root.uiScale)
 
         Text {
           anchors.horizontalCenter: parent.horizontalCenter
@@ -473,7 +472,7 @@ Item {
           color: Commons.Color.accent
           font.family: Style.font.family
           font.bold: true
-          font.pixelSize: Math.round(Style.font.display * 1.7 * root.k)
+          font.pixelSize: Math.round(Style.font.display * 1.7 * root.uiScale)
         }
 
         Text {
@@ -481,13 +480,13 @@ Item {
           text: "points in " + root.num(root.endMoves) + (root.endMoves === 1 ? " move" : " moves")
           color: Commons.Color.foreground
           font.family: Style.font.family
-          font.pixelSize: Math.round(Style.font.body * root.k)
+          font.pixelSize: Math.round(Style.font.body * root.uiScale)
         }
       }
 
       Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(6) * root.k)
+        spacing: Math.round(Style.space(6) * root.uiScale)
 
         Chip {
           visible: root.endTile > 0
@@ -503,7 +502,7 @@ Item {
 
       Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.round(Style.space(10) * root.k)
+        spacing: Math.round(Style.space(10) * root.uiScale)
 
         OverlayButton {
           visible: root.shownState === "won"
@@ -527,8 +526,8 @@ Item {
     property alias text: chipText.text
     property bool highlight: false
 
-    implicitWidth: chipText.implicitWidth + Math.round(Style.space(14) * root.k)
-    implicitHeight: chipText.implicitHeight + Math.round(Style.space(6) * root.k)
+    implicitWidth: chipText.implicitWidth + Math.round(Style.space(14) * root.uiScale)
+    implicitHeight: chipText.implicitHeight + Math.round(Style.space(6) * root.uiScale)
     radius: height / 2
     color: highlight ? Commons.Color.accent : Util.alpha(Commons.Color.foreground, 0.14)
     border.width: highlight ? 0 : 1
@@ -540,7 +539,7 @@ Item {
       color: chip.highlight ? Commons.Color.background : Commons.Color.foreground
       font.family: Style.font.family
       font.bold: chip.highlight
-      font.pixelSize: Math.round(Style.font.caption * root.k)
+      font.pixelSize: Math.round(Style.font.caption * root.uiScale)
     }
   }
 
@@ -550,8 +549,8 @@ Item {
     property bool primary: false
     signal activated()
 
-    implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * root.k)
-    implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * root.k)
+    implicitWidth: btnText.implicitWidth + Math.round(Style.space(32) * root.uiScale)
+    implicitHeight: btnText.implicitHeight + Math.round(Style.space(16) * root.uiScale)
     radius: Style.cornerRadius
     scale: area.pressed ? 0.96 : 1
     Behavior on scale { NumberAnimation { duration: Style.duration(90); easing.type: Easing.OutQuad } }
@@ -569,7 +568,7 @@ Item {
       color: btn.primary ? Commons.Color.background : Commons.Color.foreground
       font.family: Style.font.family
       font.bold: true
-      font.pixelSize: Math.round(Style.font.body * root.k)
+      font.pixelSize: Math.round(Style.font.body * root.uiScale)
     }
 
     MouseArea {
