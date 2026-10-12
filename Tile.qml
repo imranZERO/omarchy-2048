@@ -333,20 +333,27 @@ Item {
     }
   }
 
-  onDyingChanged: if (dying) dyingComp.createObject(root)
+  // With animations off every duration is 0. An animation that finishes while
+  // it is being created cannot destroy itself (Qt refuses, with a warning), so
+  // none are made then: the tile just shows its end state.
+  readonly property bool animated: popMs > 0
+
+  onDyingChanged: if (dying && animated) dyingComp.createObject(root)
 
   Component.onCompleted: {
     if (level >= 11) glowComp.createObject(face)
+    if (!animated) {
+      face.scale = 1
+      return
+    }
     if (kind === "spawn") spawnComp.createObject(root)
     else if (kind === "merge") {
       popComp.createObject(root)
-      if (popMs > 0) {
-        flashComp.createObject(face)
-        if (fx > 0) ringComp.createObject(root, { delayMs: slideMs + popMs * 0.3, lifeMs: popMs * 2.4 })
-        if (fx > 1) ringComp.createObject(root, {
-          delayMs: slideMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
-        })
-      }
+      flashComp.createObject(face)
+      if (fx > 0) ringComp.createObject(root, { delayMs: slideMs + popMs * 0.3, lifeMs: popMs * 2.4 })
+      if (fx > 1) ringComp.createObject(root, {
+        delayMs: slideMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
+      })
     } else if (kind === "restore") restoreComp.createObject(root)
   }
 }
