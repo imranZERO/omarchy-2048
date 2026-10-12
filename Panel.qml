@@ -165,19 +165,21 @@ Panel {
   property int combo: 0
   property real lastBlockedMs: 0
 
-  function startGame() {
+  // `sweep` clears the old tiles with an animation first (a new game, not a
+  // board size change).
+  function startGame(sweep) {
     bestBeaten = false
     combo = 0
     game = Game.newGame(boardSize)
     score = 0
     setHistory([])
-    board.rebuild(Game.tiles(game), "spawn")
+    board.rebuild(Game.tiles(game), sweep ? "new" : "spawn")
     updateEnd()
   }
 
   function newGame() {
     hintNew.press()
-    startGame()
+    startGame(true)
     save()
   }
 

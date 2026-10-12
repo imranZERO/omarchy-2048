@@ -33,6 +33,8 @@ Item {
   readonly property int side: size * cell + (size + 1) * gap
 
   readonly property int slideMs: Style.duration(Math.round(110 * speed))
+  // When a slide has visibly arrived (it eases out); merge effects start here.
+  readonly property int landMs: Math.round(slideMs * 0.55)
   readonly property int popMs: Style.duration(Math.round(200 * speed))
   readonly property int spawnMs: Style.duration(Math.round(200 * speed))
   // False with Animations set to Off or the system's reduce-motion on.
@@ -64,10 +66,12 @@ Item {
   }
 
   // Replace everything with `list` ([{id, value, x, y}]). Fresh delegates start
-  // in place, so nothing slides in from the corner. `kind` is "static", or
-  // "restore" to fade the tiles in (used by undo).
+  // in place, so nothing slides in from the corner. `kind` is "static", "spawn"
+  // to scale the tiles in, "restore" to fade them in (used by undo), or "new":
+  // the old tiles sweep away corner to corner, then the new ones scale in.
   function rebuild(list, kind) {
     dyingTimer.stop()
+    sweepTimer.stop()
     thumpAnim.stop()
     thumpScale = 1
     burstAnim.stop()
@@ -75,11 +79,37 @@ Item {
     comboAnim.stop()
     comboHide.stop()
     comboBadge.opacity = 0
-    tilesModel.clear()
+    purgeDying()
+
+    var delay = 0
+    if (kind === "new" && animated && tilesModel.count > 0) {
+      // Each tile leaves a step after the one above-left of it. Leaving tiles
+      // count as dying, so a move made mid-sweep clears them at once.
+      var step = Math.round(popMs * 0.12)
+      for (var j = 0; j < tilesModel.count; j++) {
+        var old = tilesModel.get(j)
+        tilesModel.setProperty(j, "kind", "exit")
+        tilesModel.setProperty(j, "delay", (old.col + old.row) * step)
+        tilesModel.setProperty(j, "dying", true)
+      }
+      var sweepMs = 2 * (size - 1) * step + Math.round(popMs * 0.8)
+      delay = Math.max(0, Math.round(sweepMs * 0.7) - slideMs)
+      sweepTimer.interval = sweepMs + 20
+      sweepTimer.restart()
+    } else {
+      tilesModel.clear()
+    }
+
+    var newKind = kind === "new" ? "spawn" : (kind || "static")
     for (var i = 0; i < list.length; i++) {
       var t = list[i]
-      tilesModel.append({ tid: t.id, value: t.value, col: t.x, row: t.y, kind: kind || "static", dying: false, fx: 0 })
+      tilesModel.append({ tid: t.id, value: t.value, col: t.x, row: t.y, kind: newKind, dying: false, fx: 0, delay: delay })
     }
+  }
+
+  Timer {
+    id: sweepTimer
+    onTriggered: root.purgeDying()
   }
 
   // Animate one move. `res` is the result of Game.move().
@@ -98,13 +128,15 @@ Item {
     }
 
     // Big merges make the whole board thump as the tile lands; the goal tile
-    // sends confetti from where it was made.
+    // sends confetti from where it was made, and shimmers.
     var thump = 0
     var top = null
     for (i = 0; i < res.merges.length; i++) {
+      if (res.merges[i].value >= 128) thump = Math.max(thump, res.merges[i].newMax ? 0.03 : 0.015)
+      if (!top || res.merges[i].value > top.value) top = res.merges[i]
+    }
+    for (i = 0; i < res.merges.length; i++) {
       var g = res.merges[i]
-      if (g.value >= 128) thump = Math.max(thump, g.newMax ? 0.03 : 0.015)
-      if (!top || g.value > top.value) top = g
       for (var j = 0; j < g.fromIds.length; j++) {
         var si = indexOfTile(g.fromIds[j])
         if (si < 0) continue
@@ -112,9 +144,10 @@ Item {
         tilesModel.setProperty(si, "row", g.y)
         tilesModel.setProperty(si, "dying", true)
       }
-      // Rings for the big ones; two when it is the best tile of the game.
-      var fx = g.value >= 128 ? (g.newMax ? 2 : 1) : 0
-      tilesModel.append({ tid: g.id, value: g.value, col: g.x, row: g.y, kind: "merge", dying: false, fx: fx })
+      // Rings for the big ones; two when it is the best tile of the game, and a
+      // shimmer as well for the goal tile.
+      var fx = res.won && g === top ? 3 : g.value >= 128 ? (g.newMax ? 2 : 1) : 0
+      tilesModel.append({ tid: g.id, value: g.value, col: g.x, row: g.y, kind: "merge", dying: false, fx: fx, delay: 0 })
     }
 
     if (thump > 0) thumpBoard(thump)
@@ -122,7 +155,7 @@ Item {
 
     if (res.spawned) {
       var s = res.spawned
-      tilesModel.append({ tid: s.id, value: s.value, col: s.x, row: s.y, kind: "spawn", dying: false, fx: 0 })
+      tilesModel.append({ tid: s.id, value: s.value, col: s.x, row: s.y, kind: "spawn", dying: false, fx: 0, delay: 0 })
     }
 
     dyingTimer.restart()
@@ -147,6 +180,18 @@ Item {
   property real thumpScale: 1
   property real thumpTo: 1
 
+  // A new board size settles in: a slight scale up and fade, instead of the new
+  // grid just appearing.
+  property bool ready: false
+  Component.onCompleted: ready = true
+  onSizeChanged: if (ready && animated) settleAnim.restart()
+
+  ParallelAnimation {
+    id: settleAnim
+    NumberAnimation { target: root; property: "scale"; from: 0.94; to: 1; duration: Math.round(260 * root.speed); easing.type: Easing.OutBack }
+    NumberAnimation { target: root; property: "opacity"; from: 0.3; to: 1; duration: Math.round(200 * root.speed); easing.type: Easing.OutCubic }
+  }
+
   function thumpBoard(amount) {
     if (!animated) return
     thumpTo = 1 + amount
@@ -155,7 +200,7 @@ Item {
 
   SequentialAnimation {
     id: thumpAnim
-    PauseAnimation { duration: root.slideMs }
+    PauseAnimation { duration: root.landMs }
     NumberAnimation { target: root; property: "thumpScale"; to: root.thumpTo; duration: 70 * root.speed; easing.type: Easing.OutQuad }
     NumberAnimation { target: root; property: "thumpScale"; to: 1; duration: 200 * root.speed; easing.type: Easing.OutBack }
   }
@@ -296,7 +341,7 @@ Item {
   SequentialAnimation {
     id: burstAnim
     // Let the tile land first.
-    PauseAnimation { duration: root.slideMs + root.popMs * 0.4 }
+    PauseAnimation { duration: root.landMs + root.popMs * 0.4 }
     ScriptAction { script: { burst.t = 0; burst.running = true } }
     NumberAnimation { target: burst; property: "t"; from: 0; to: 1; duration: 1100 * root.speed; easing.type: Easing.OutQuad }
     ScriptAction { script: burst.running = false }
@@ -454,9 +499,10 @@ Item {
     }
   }
 
+  // A win waits for the goal tile's pop, shimmer and confetti to play out first.
   Timer {
     id: overlayTimer
-    interval: Style.duration(Math.round(250 * root.speed))
+    interval: Style.duration(Math.round((root.endState === "won" ? 1100 : 250) * root.speed))
     onTriggered: root.overlayOn = root.endState !== ""
   }
 

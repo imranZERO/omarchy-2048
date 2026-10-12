@@ -35,6 +35,9 @@ Rectangle {
   Behavior on opacity {
     NumberAnimation { duration: Style.duration(160); easing.type: Easing.OutCubic }
   }
+  // Rises into place as it fades in, and sinks as it fades out; driven by the
+  // opacity above, so it costs no animation of its own.
+  transform: Translate { y: Math.round(Style.space(10) * root.uiScale * (1 - root.opacity)) }
 
   // Swallow clicks so the board underneath stays put.
   MouseArea {

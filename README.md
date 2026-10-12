@@ -18,7 +18,8 @@ The rules and animation timing are ported from
   nothing bumps the tiles, and big merges send out glow rings.
 - Undo (the last 50 moves, including out of a game over) and a stats page, for all
   board sizes or just the current one.
-- A combo badge for three or more scoring moves in a row, and confetti when you win.
+- A combo badge for three or more scoring moves in a row that heats up as the streak
+  grows, and a shimmer and confetti when you win. A new game sweeps the old tiles away.
 - Board sizes 3×3 to 6×6. Each size keeps its own game and best score.
 - Tile colors from the active Omarchy theme, the original 2048 colors, or a
   single-hue shading of the theme accent.

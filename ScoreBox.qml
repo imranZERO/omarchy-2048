@@ -19,6 +19,13 @@ Rectangle {
 
   readonly property bool animated: speed > 0 && Style.duration(1) > 0
 
+  // The number on show rolls to `value` instead of jumping.
+  property real shownValue: value
+  Behavior on shownValue {
+    enabled: box.animated
+    NumberAnimation { duration: Style.duration(Math.round(180 * box.speed)); easing.type: Easing.OutCubic }
+  }
+
   function flash(delta) {
     if (!animated) return
     gainComponent.createObject(box, { text: "+" + Numerals.convert(delta, box.numerals) })
@@ -54,7 +61,7 @@ Rectangle {
     Text {
       id: number
       anchors.horizontalCenter: parent.horizontalCenter
-      text: Numerals.format(box.value, box.numerals)
+      text: Numerals.format(Math.round(box.shownValue), box.numerals)
       property real hot: 0
       color: Qt.tint(Commons.Color.foreground, Util.alpha(Commons.Color.accent, hot))
       font.family: Style.font.family

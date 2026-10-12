@@ -12,9 +12,10 @@ Item {
   required property int value
   required property int col
   required property int row
-  required property string kind     // "static" | "spawn" | "merge" | "restore"
-  required property bool dying      // sliding into a merge, about to be removed
-  required property int fx          // 0 none, 1 glow ring, 2 double ring (new best tile)
+  required property string kind     // "static" | "spawn" | "merge" | "restore" | "exit"
+  required property bool dying      // sliding into a merge or leaving the board, about to be removed
+  required property int fx          // 0 none, 1 glow ring, 2 double ring (new best tile), 3 that plus a shimmer (goal tile)
+  required property int delay       // ms to wait before a spawn or exit, for the new-game sweep
 
   property int cell: 64
   property int gap: 10
@@ -73,6 +74,10 @@ Item {
       NumberAnimation { target: root; property: "nudge"; to: 0; duration: root.popMs * 0.45; easing.type: Easing.InOutQuad }
     }
   }
+
+  // When a slide has visibly arrived: it eases out, so most of the distance is
+  // covered early. Merge effects start here rather than at the very end.
+  readonly property int landMs: Math.round(slideMs * 0.55)
 
   Behavior on x { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
   Behavior on y { NumberAnimation { duration: root.slideMs; easing.type: Easing.OutCubic } }
@@ -204,7 +209,7 @@ Item {
     SequentialAnimation {
       running: true
       onStopped: destroy()
-      PauseAnimation { duration: root.slideMs }
+      PauseAnimation { duration: root.slideMs + root.delay }
       NumberAnimation {
         target: face; property: "scale"; from: 0; to: 1
         duration: root.spawnMs; easing.type: Easing.OutBack
@@ -218,7 +223,7 @@ Item {
     SequentialAnimation {
       running: true
       onStopped: destroy()
-      PauseAnimation { duration: root.slideMs }
+      PauseAnimation { duration: root.landMs }
       NumberAnimation {
         target: face; property: "scale"; from: 0; to: 1.2
         duration: root.popMs * 0.5; easing.type: Easing.OutQuad
@@ -242,7 +247,7 @@ Item {
       SequentialAnimation {
         running: true
         onStopped: flash.destroy()
-        PauseAnimation { duration: root.slideMs }
+        PauseAnimation { duration: root.landMs }
         NumberAnimation { target: flash; property: "opacity"; from: 0.4; to: 0; duration: root.popMs * 1.2; easing.type: Easing.OutQuad }
       }
     }
@@ -308,10 +313,64 @@ Item {
     SequentialAnimation {
       running: true
       onStopped: destroy()
-      PauseAnimation { duration: root.slideMs * 0.8 }
+      PauseAnimation { duration: root.landMs }
       NumberAnimation {
         target: face; property: "opacity"; to: 0
         duration: root.popMs * 0.6; easing.type: Easing.OutQuad
+      }
+    }
+  }
+
+  // Leaving for a new game: shrink away after this tile's turn in the sweep.
+  Component {
+    id: exitComp
+    SequentialAnimation {
+      running: true
+      onStopped: destroy()
+      PauseAnimation { duration: root.delay }
+      ParallelAnimation {
+        NumberAnimation {
+          target: face; property: "scale"; to: 0
+          duration: root.popMs * 0.8; easing.type: Easing.InBack
+        }
+        NumberAnimation {
+          target: face; property: "opacity"; to: 0
+          duration: root.popMs * 0.8; easing.type: Easing.InQuad
+        }
+      }
+    }
+  }
+
+  // The goal tile: a band of light sweeps across it once, after the pop. Clipped
+  // to the face's box (not its rounded corners, which a light band barely shows).
+  Component {
+    id: shimmerComp
+    Item {
+      id: shimmer
+      anchors.fill: parent
+      clip: true
+      Rectangle {
+        id: band
+        width: root.cell * 0.32
+        height: root.cell * 1.8
+        y: -root.cell * 0.4
+        x: -width * 2
+        rotation: 20
+        gradient: Gradient {
+          orientation: Gradient.Horizontal
+          GradientStop { position: 0.0; color: Util.alpha("#ffffff", 0) }
+          GradientStop { position: 0.5; color: Util.alpha("#ffffff", 0.55) }
+          GradientStop { position: 1.0; color: Util.alpha("#ffffff", 0) }
+        }
+      }
+      SequentialAnimation {
+        running: true
+        onStopped: shimmer.destroy()
+        PauseAnimation { duration: root.landMs + root.popMs }
+        NumberAnimation {
+          target: band; property: "x"; from: -band.width * 2; to: root.cell + band.width
+          duration: root.popMs * 3.5; easing.type: Easing.InOutQuad
+        }
       }
     }
   }
@@ -338,7 +397,7 @@ Item {
   // none are made then: the tile just shows its end state.
   readonly property bool animated: popMs > 0
 
-  onDyingChanged: if (dying && animated) dyingComp.createObject(root)
+  onDyingChanged: if (dying && animated) (kind === "exit" ? exitComp : dyingComp).createObject(root)
 
   Component.onCompleted: {
     if (level >= 11) glowComp.createObject(face)
@@ -350,10 +409,11 @@ Item {
     else if (kind === "merge") {
       popComp.createObject(root)
       flashComp.createObject(face)
-      if (fx > 0) ringComp.createObject(root, { delayMs: slideMs + popMs * 0.3, lifeMs: popMs * 2.4 })
+      if (fx > 0) ringComp.createObject(root, { delayMs: landMs + popMs * 0.3, lifeMs: popMs * 2.4 })
       if (fx > 1) ringComp.createObject(root, {
-        delayMs: slideMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
+        delayMs: landMs + popMs * 0.9, grow: 2.2, startOpacity: 0.7, thickness: 0.035, lifeMs: popMs * 2.6
       })
+      if (fx > 2) shimmerComp.createObject(face)
     } else if (kind === "restore") restoreComp.createObject(root)
   }
 }
